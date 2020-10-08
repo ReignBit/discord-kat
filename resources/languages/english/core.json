@@ -1,0 +1,67 @@
+{
+    "generic": {
+        "kat_ready": [
+            "こんにちは。カットです",
+            "Version {bot.version}!",
+            "100% more kuudere!",
+            "with {bot.code_line_count} lines of code",
+            "in {bot.guild_count} servers",
+            "爆裂魔法！",
+            "ごめんなさい",
+            "おはようございます"
+        ],
+        "kat_restart_scheduled": [
+            "Restart Scheduled"
+        ],
+        "kat_maintenance_presence": [
+            "⚠️Maintenance⚠️"
+        ]
+    },
+    "command": {
+        "kat_load": [
+            "Loaded cog `{cog_name}` successfully!\nCommand List:\n`{cmds}`"
+        ],
+        "kat_unload": [
+            "I've unloaded `{cog_name}`."
+        ],
+        "kat_full_reload": [
+            "Reloaded all cogs in {time:.3f} seconds!"
+        ],
+        "kat_reload": [
+            "Reloaded cog `{cog_name}` successfully!\nCommand List:\n`{cmds}`"
+        ],
+        "kat_stop":
+        [
+            "さようなら"
+        ],
+        "kat_restart":
+        [
+            "行ってきます"
+        ],
+        "kat_maintenance_on": [
+            ":warning: **I am currently in Maintenance mode** :warning:\nDuring this time, the following is in effect:\nAll levels are frozen\nDatabase access is blocked"
+        ],
+        "kat_maintenance_off": [
+            "**I am no longer in Maintenance mode**"
+        ]
+    },
+    "error": {
+        "arg_missing": [
+            "Which cog should I do this to? `{ctx.command.signature}`"
+        ],
+        "ExtensionNotFound": [
+            "I couldn't find anything called that to load!"
+        ],
+        "ExtensionAlreadyLoaded": [
+            "Hang on... I've already loaded this!"
+        ],
+        "ExtensionFailed": [
+            "Oh no... That didn't work correctly. Looks like that failed to load..."
+        ],
+        "NoEntryPointError": [
+            "Wh- Where... Hmm... I can't find how to load this one... Make sure there's an entry point for me!"
+        ],
+        "ExtensionNotLoaded": ["That's not even loaded! Job done!"]
+    },
+    "special": {}
+}

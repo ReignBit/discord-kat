@@ -1,0 +1,4 @@
+translatelast||Translates a user's last message in the current channel
+translatemsg||Translates a message by message id
+translate||Attempts to translate the last sent message. If no language code is given then defaults to English.
+translatetext||Translate text in the message that was sent by the author

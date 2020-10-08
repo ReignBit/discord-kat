@@ -1,0 +1,14 @@
+{
+    "error": {
+        "command_error": [
+            "An error has occured whilst running this command. Try the command again, or wait until the issue has been fixed."
+        ],
+        "permission_error": [
+            ":no_entry_sign:**Insufficient Permissions**\n*You are missing the required permissions for this command.*"
+        ],
+        "missing_permissions": [
+            ":x: Insuficent Permissions for {cmd.name}"
+        ],
+        "missing_args": [":sos: **Missing Argument**\n`{args}`"]
+    }
+}
