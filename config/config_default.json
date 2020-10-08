@@ -1,1 +1,94 @@
 
+{
+    "token": "YOUR_TOKEN_HERE",
+    "startup_cogs": [
+        "core",
+        "level",
+        "admin",
+        "fun",
+        "exchange",
+        "translate",
+        "anonymous",
+        "ttt"
+    ],
+    "default_prefix": "$",
+    "maintenance_mode": 0,
+    "logger": {
+        "compress_logs": 1,
+        "log_level": 0,
+        "filename": "latest.log"
+    },
+    "sql": {
+        "hostname": "HOSTNAME",
+        "db": "DATABASE",
+        "user": "USER",
+        "password": "PASSWORD"
+    },
+    "cogs": {
+        "core": {
+            "restart_message_guild_id": 0,
+            "restart_message_channel_id": 0,
+            "ensure_file_integrity": [
+                "cogs/core.py",
+                "kat.py",
+                "utilities/KatCog.py",
+                "utilities/events.py",
+                "utilities/KatClasses.py",
+                "utilities/orm_utilities.py"
+            ]
+        },
+        "dyndns": {
+            "auth_key": "GoDaddy API Key and Secret here",
+            "domain": "Domain to update here"
+        },
+        "level": {
+            "ignore_chars": [
+                "http",
+                "/",
+                "@",
+                "!",
+                "<",
+                ">",
+                "#",
+                "$",
+                "~",
+                "-"
+            ]
+        },
+        "configurator": {
+            "banned_prefix_chars": [
+                "\n",
+                "\t",
+                "\\"
+            ]
+        },
+        "fun": {
+            "gify_api_key": "gify api key"
+        },
+        "orwell": {
+            "apihost": "orwell won't work for public release",
+            "user": "orwell won't work for public release",
+            "pass": "orwell won't work for public release",
+            "allowed_roles": [
+                311612862554439692,
+                342836735069388809,
+                311612862554439692,
+                318440174931673089,
+                311612862554439692,
+                519611151143665664
+            ]
+        },
+        "milsim": {
+            "operation_name": "milsim won't work for public release"
+        }
+    },
+    "EventManager": {
+        "MAX_EVENT_TIMER": 86400,
+        "DEBUG_MODE": 1,
+        "events": {
+            "minute_event": 60,
+            "five_minute_event": 300,
+            "hour_event": 3600
+        }
+    }
+}
