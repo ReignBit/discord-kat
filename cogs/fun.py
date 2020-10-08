@@ -107,8 +107,15 @@ class Fun(KatCog.KatCog):
         if not self.bot.run_day_check:
             return
 
-        guild = discord.utils.get(self.bot.guilds, id=311612862554439692)
-        channel = discord.utils.get(guild.channels, id=432214639305162752)
+        # TODO: Make this multi-guild friendly.
+        try:
+            guild = discord.utils.get(self.bot.guilds, id=311612862554439692)
+            channel = discord.utils.get(guild.channels, id=432214639305162752)
+        except AttributeError:
+            # we must'nt be able to see Reign guild
+            self.bot.run_day_check = False
+            return
+
         self.log.info("MeguMonday check started.")
         date = datetime.datetime.today()
 
