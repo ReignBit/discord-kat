@@ -254,10 +254,12 @@ class Kat(commands.Bot):
                 self.loop.run_until_complete(self.login(self.settings["token"]))
                 self.loop.run_until_complete(self.connect(reconnect=False))
                 _disconnected = True
-            except (discord.HTTPException, socket.gaierror, Exception):
+            except (discord.HTTPException, socket.gaierror, Exception) as err:
                 self.log.warning(
                     "Failed to connect to Discord. Waiting {} seconds".format(_tries * 5))
                 time.sleep(_tries * 5)
+
+                self.log.warning(err)
                 _tries += 1
 
 
