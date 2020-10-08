@@ -1,3 +1,5 @@
+from typing import Union
+
 from contextlib import contextmanager
 import sqlalchemy
 
@@ -86,7 +88,7 @@ class SqlEngine:
             return guild.prefix
 
 
-    def ensure_exists(self, kat_class, guild_id=None, user_id=None):
+    def ensure_exists(self, kat_class, guild_id=None, user_id=None) -> Union[KatGuild, KatUser, KatMember]:
         """Ensures that the Member/Guild/User relation exists in the DB and returns the result. If one is not found, an entry is generated and returned"""
 
         if kat_class is "KatGuild":

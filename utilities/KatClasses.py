@@ -5,6 +5,8 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 import json
 Base = declarative_base()
+
+
 class KatGuild(Base):
     """Guild information from Kat DB."""
     __tablename__ = "guild_table"
@@ -33,6 +35,7 @@ class KatGuild(Base):
         self._settings = new_settings
 
     def get_setting(self, setting_key):
+        """Gets the value at `setting_key`. If it doesn't exist then returns `None`."""
         _path = setting_key.split(".")
         _result = self.settings
         for x in _path:
@@ -41,11 +44,16 @@ class KatGuild(Base):
                 return None
         return _result
         
-    def get_raw_settings(self):
+    def get_raw_settings(self) -> str:
         """Return string of guild settings."""
         return self.settings
     
     def set_setting(self, setting_key, value):
+        """Adds/Overwrites the current `setting_key` with `value`
+            If `setting_key` doesn't exist then it is created.
+
+            Returns `value`.
+        """
         _lst = self.settings
         self._nested_set(_lst, setting_key.split('.'), value)
         self.settings = json.dumps(_lst)
@@ -58,6 +66,8 @@ class KatGuild(Base):
         dic[keys[-1]] = value
 
     def ensure_setting(self, setting_key, value):
+        """Ensure that `setting_key` exists, if not then set's default to `value`.
+        """
         result = self.get_setting(setting_key)
         if result == None:
             result = self.set_setting(setting_key, value)

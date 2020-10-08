@@ -5,6 +5,7 @@ import sys
 import traceback
 import json
 import random
+from string import Template
 
 
 import utilities.KatLogger as KatLogger
@@ -152,7 +153,7 @@ class KatCog(commands.Cog):
         choice = random.choice(_result).format(**args, cog=self, bot=self.bot)
         return choice
 
-    def get_embed(self, embed, **args):
+    def get_embed(self, embed, **kwargs):
         """Returns the embed JSON for embed, along with formatted args"""
         _path = embed.split(".")
         _result = self.responses
@@ -160,27 +161,19 @@ class KatCog(commands.Cog):
             _result = _result.get(x, {})
             if _result == {}:
                 raise KeyError(
-                    "Key {} doesn't exist in {}".format(x, response))
+                    "Key {} doesn't exist in {}".format(x, embed))
 
-        # TODO: Not sure if this needs access to cog and bot, but time will tell...
-        # we need to convert to a string to add our format args, then we re-convert back to json
-        string = json.dumps(_result)
 
-        # we also need to replace all {} with {{}} to avoid .format from getting freaky
-        string = string.replace("{", "{{")
-        string = string.replace("}", "}}")
+        json_string = json.dumps(_result)
 
-        string = string.format(**args, cog=self, bot=self.bot)
-
-        # and then get rid of those double braces
-        string = string.replace("{{", "{")
-        string = string.replace("}}", "}")
-
-        _result = json.loads(string)
-
+        t = Template(json_string)
+        t = t.substitute(**kwargs)
+        self.log.debug(t)
+        _result = json.loads(t)
         return _result
 
     async def create_help_file(self):
+        """Generates the help page for the cog. Used in the website's help page"""
         await asyncio.sleep(5)
         data = ""
         for command in self.walk_commands():
@@ -230,6 +223,7 @@ class KatCog(commands.Cog):
             self.log.exception(error.original)
         except:
             pass
+        self.log.warn("error: " + error)
         await ctx.channel.send(self.get_response('common.error.command_error'))
 
     # DAPI event
