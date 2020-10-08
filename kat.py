@@ -25,7 +25,7 @@ import utilities.events
 from utilities.KatClasses import sessionmaker, KatGuild, KatUser, KatMember
 import utilities.orm_utilities as orm_utilities
 
-__version__ = '2.9.5'
+__version__ = '3.0.0_dev'
 
 class Kat(commands.Bot):
     
