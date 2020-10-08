@@ -114,3 +114,6 @@ config.json
 
 # vscode
 .vscode/
+cogs/Cog Formatting.txt
+start_kat MANUAL.bat
+*.bat
