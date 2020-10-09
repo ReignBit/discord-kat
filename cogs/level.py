@@ -153,16 +153,15 @@ class Level(KatCog.KatCog):
 
         try:
             string = "\n\n**Username  |  Level  |   XP**    \n"
-            for leader in leaders:
+            for leader in leaders.copy():
                 try:
                     username = ctx.guild.get_member(leader.user_id).display_name
                 except AttributeError:
-                    # TODO: Research if this could work VV
-                    # Kat can no longer see this person in the guild. We should think about removing them here?
-                    # Although, im not sure how scalable this is, since im unsure whether shards/1000+ guilds users class as being able to be seen,
-                    # if they are not cached in the bot.
-
-                    username = "???#" + str(leader.user_id)
+                    # Here we delete the user if we can't see them. However im unsure how this would work with +100 servers.
+                    self.log.info("Deleting user_id {} from the DB.".format(leader.user_id))
+                    self.sql.query("KatUser").filter_by(user_id=leader.user_id).delete()
+                    leaders.pop(leaders.index(leader))
+                    
                 string += "{}. {}   |   `{}`/`{}`\n".format(leaders.index(leader) + 1, username, leader.lvl, leader.xp)
         except Exception as e:
             self.log.exception(e)
