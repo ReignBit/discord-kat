@@ -132,15 +132,12 @@ class Configurator(KatCog.KatCog):
             else:
                 await ctx.send(self.get_response("configurator.error.prefix_banned", prefix=new_prefix))
 
-    # TODO: These need to be updated to use ensure_exists instead of query
-
-
     @config.group()
     async def level(self, ctx):
         if ctx.invoked_subcommand is not None:
             return
 
-        guild = self.sql.query("KatGuild").get(ctx.guild.id)
+        guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
         fields = [
             (f":eight_spoked_asterisk:  XP Multiplier: {guild.ensure_setting('settings.level.xp_multi', 1.0)}", "multi <float>"),
             (f":snowflake: Freeze Status: {guild.ensure_setting('settings.level.freeze', False)}", "freeze")
@@ -148,10 +145,9 @@ class Configurator(KatCog.KatCog):
         embed = self._config_embed_builder(ctx, "config level", fields)
         await ctx.send(embed=embed)
 
-
     @level.command()
     async def freeze(self, ctx):
-        guild = self.sql.query("KatGuild").get(ctx.guild.id)
+        guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
         new = guild.set_setting("settings.level.freeze",
                                 not guild.get_setting('settings.level.freeze'))
         if new:
@@ -162,7 +158,7 @@ class Configurator(KatCog.KatCog):
 
     @level.command()
     async def multi(self, ctx, mul):
-        guild = self.sql.query("KatGuild").get(ctx.guild.id)
+        guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
         if type(mul) is not float:
             raise TypeError
         if mul < 0.0 or mul > 2.5:
