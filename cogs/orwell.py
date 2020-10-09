@@ -19,8 +19,7 @@ class Orwell(KatCog.KatCog):
         self.total_voters = 3
 
     def is_role(self, ctx):
-        #TODO: Make this a json file or something.
-        roles = [self.bot.get_guild(311612862554439692).get_role(342836735069388809), self.bot.get_guild(311612862554439692).get_role(318440174931673089), self.bot.get_guild(311612862554439692).get_role(519611151143665664)]
+        roles = self.settings['allowed_roles']
         if (ctx.author.top_role in roles) or ctx.author.id == self.bot.app_info.owner.id:
             return True
 

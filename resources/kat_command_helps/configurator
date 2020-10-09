@@ -1,7 +1,7 @@
 config||No help provided.
-roles||Lists the current Administrator and Moderator roles for the guild
-add||No help provided.
 prefix||No help provided.
 level||No help provided.
-freeze||No help provided.
 multi||No help provided.
+freeze||No help provided.
+roles||Lists the current Administrator and Moderator roles for the guild
+add||No help provided.

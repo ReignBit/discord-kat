@@ -118,3 +118,4 @@ cogs/Cog Formatting.txt
 start_kat MANUAL.bat
 *.bat
 resources/kat_command_helps/*
+resources/kat_command_helps/configurator
