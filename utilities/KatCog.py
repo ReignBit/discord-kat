@@ -49,11 +49,6 @@ class KatCog(commands.Cog):
         # New EventManager stuff
         self.event_manager = utilities.events.EventManager(self.bot, cog=self)
 
-        # TODO: Check whether this is needed or not anymore, since we've changed to the new EventManager system.
-        # Might be best to just leave this for backwards-compatibility.
-        # when true, any background tasks will be run. Gets set to false when cog unloads.
-        self.run = True
-
         for cmd in self.walk_commands():
             self.log.info("Registered command %s" % cmd.qualified_name)
 
@@ -63,6 +58,11 @@ class KatCog(commands.Cog):
             )]
         except KeyError:
             self.settings = {}
+
+    def _fallback_setting(self, key):
+        """Fetches fallback setting in case self.bot.settings returns KeyError"""
+        # TODO: do this.
+        pass
 
     def get_guild_setting(self, guild_id: discord.Guild, setting_key, default=None):
         """ 
@@ -162,7 +162,6 @@ class KatCog(commands.Cog):
             if _result == {}:
                 raise KeyError(
                     "Key {} doesn't exist in {}".format(x, embed))
-
 
         json_string = json.dumps(_result)
 
