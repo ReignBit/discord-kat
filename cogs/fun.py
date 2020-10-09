@@ -33,22 +33,12 @@ class Fun(KatCog.KatCog):
     def get_cached_gifs(self):
         self.log.info("Refreshing gif cache for 1 hour...")
 
-        # TODO: IF UPLOADING TO GITHUB: Put key in settings.py
         r = requests.get(
             "https://api.tenor.com/v1/search?q=megumin&key={}&limit=8&anon_id=312ced313baf42079d1588df7e032c69".format(self.settings['gify_api_key']))
         if r.status_code == 200:
             # load the GIFs using the urls for the smaller GIF sizes
             return json.loads(r.content)
         return []
-
-    #TODO: Is this even necessary?
-    def is_goodtime(self):
-        # hour = datetime.datetime.today().hour
-        # if 13 >= hour <= 19:
-        #     return True
-        # return False
-        return True
-
 
     async def _get_gif(self, search_query):
         """ Sends API call to tenor, for search_query. Returns a random gif from result."""
@@ -112,7 +102,7 @@ class Fun(KatCog.KatCog):
             guild = discord.utils.get(self.bot.guilds, id=311612862554439692)
             channel = discord.utils.get(guild.channels, id=432214639305162752)
         except AttributeError:
-            # we must'nt be able to see Reign guild
+            # we mustn't be able to see Reign guild
             self.bot.run_day_check = False
             return
 
@@ -121,12 +111,11 @@ class Fun(KatCog.KatCog):
 
         if date.weekday() is 0: #is monday
             if "megu_done" not in os.listdir("resources/days/"):
-                if self.is_goodtime():
-                    await channel.send(self.dayresponse[0], file = discord.File('resources/days/0.png'))
+                await channel.send(self.dayresponse[0], file = discord.File('resources/days/0.png'))
 
-                    with open('resources/days/megu_done','w') as f:
-                        f.write('1')
-                        self.log.info("It's megumonday!")
+                with open('resources/days/megu_done','w') as f:
+                    f.write('1')
+                    self.log.info("It's megumonday!")
         else:
             try:
                 os.remove('resources/days/megu_done')

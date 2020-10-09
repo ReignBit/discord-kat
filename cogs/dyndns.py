@@ -36,8 +36,6 @@ class Dyndns(KatCog.KatCog):
 
     @commands.Cog.listener()
     async def on_kat_hour_event(self):
-        if not self.run:
-            return
         
         self.log.info("Updating IP...")
         self.current_ip, self.daddy_ip = self.update_ips()
