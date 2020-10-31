@@ -50,7 +50,7 @@
             "Hi, I'm Kat!\n\n"
         ],
         "help_link": [
-            "A full list of commands is available [here](https://kat.reign-network.co.uk/commands)\nNeed support? Get assistance from my creator [here](https://discord.gg/VFBy7faTPP)"
+            "A full list of commands is available [here](https://kat.reign-network.co.uk/commands.php?prefix={prefix})\nNeed support? Get assistance from my creator [here](https://discord.gg/VFBy7faTPP)"
         ]
 
     },
