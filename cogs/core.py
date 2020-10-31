@@ -93,7 +93,7 @@ class Core(KatCog.KatCog):
     @commands.command(aliases=['?'])
     async def help(self, ctx):
         """Shows a link for this page"""
-        embed = discord.Embed(title="How to use Kat", colour=discord.Colour(0xe08a04), description=self.get_response("core.command.help") + self.get_response("core.command.help_link", prefix=ctx.prefix))
+        embed = discord.Embed(title="How to use Kat", colour=discord.Colour(0xe08a04), description=self.get_response("core.command.help", prefix=ctx.prefix) + self.get_response("core.command.help_link", prefix=ctx.prefix))
         await ctx.send(embed=embed)
 
 
