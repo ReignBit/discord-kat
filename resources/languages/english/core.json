@@ -43,7 +43,16 @@
         ],
         "kat_maintenance_off": [
             "**I am no longer in Maintenance mode**"
+        ],
+        "help": [
+            "Kat is a multi-functional moderation bot and helper. To get started, you can use `{prefix}config` to alter settings, and use `{prefix}hug` to give someone a well deserved hug!\n\n",
+            "I support Japanese translation! Just send a message in Japanese, and i'll do my best to translate it!\n\n",
+            "Hi, I'm Kat!\n\n"
+        ],
+        "help_link": [
+            "A full list of commands is available [here](https://kat.reign-network.co.uk/commands)\nNeed support? Get assistance from my creator [here](https://discord.gg/VFBy7faTPP)"
         ]
+
     },
     "error": {
         "arg_missing": [

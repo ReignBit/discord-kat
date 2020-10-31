@@ -27,5 +27,27 @@
                 ":eight_spoked_asterisk: Changed XP multiplier to `{multi}`"
             ]
         }
+    },
+    "embeds": {
+        "roles": {
+            "list": {
+                "author": {
+                    "name": "Role Permissions for ${guild}"
+                },
+                "description": "These are the roles that can access mod and admin commands respectively. You can use `${prefix}config roles [mod|admin] [add|remove] <roleID>` to change these.",
+                "fields": [
+                    {
+                        "name": ":crossed_swords: Mod Roles",
+                        "value": "${mod_roles}",
+                        "inline": true
+                    },
+                    {
+                        "name": ":shield: Admin Roles",
+                        "value": "${admin_roles}",
+                        "inline": true
+                    }
+                ]
+            }
+        }
     }
 }

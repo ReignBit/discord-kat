@@ -2,10 +2,11 @@ from discord.ext import commands
 import discord
 import asyncio
 import sys
+import os
 import traceback
 import json
 import random
-
+from string import Template
 
 
 import utilities.KatLogger as KatLogger
@@ -13,6 +14,7 @@ import utilities.events
 from utilities.KatClasses import KatGuild, KatMember, KatUser
 import utilities.orm_utilities as orm_utilities
 import utilities.utils as utils
+
 
 class KatCog(commands.Cog):
 
@@ -28,17 +30,19 @@ class KatCog(commands.Cog):
     def __init__(self, bot):
         self.dependencies = KatCog.DEPENDENCIES
         self.bot = bot
-        
+
+        self.hidden = False # should this Cog be hidden from the help command?
+        self.generate_help_file()
+
         self.sql = orm_utilities.SqlEngine()
         self.sql.create_sql_session()
 
         self.log = KatLogger.get_logger(self.qualified_name)
-        self.bot.loop.create_task(self.create_help_file())
 
-        # Load GLOBAL settings from config/     
+        # Load GLOBAL settings from config/
         self.load_settings()
 
-        # operator level for permissions. 
+        # operator level for permissions.
         self._operator_level = 0
 
         # Response Handling.
@@ -48,20 +52,44 @@ class KatCog(commands.Cog):
         # New EventManager stuff
         self.event_manager = utilities.events.EventManager(self.bot, cog=self)
 
-        # TODO: Check whether this is needed or not anymore, since we've changed to the new EventManager system.
-        # Might be best to just leave this for backwards-compatibility.
-        self.run = True     # when true, any background tasks will be run. Gets set to false when cog unloads.
-
-
         for cmd in self.walk_commands():
             self.log.info("Registered command %s" % cmd.qualified_name)
 
     def load_settings(self):
         try:
-            self.settings = self.bot.settings['cogs'][self.qualified_name.lower()]
+            self.settings = self.bot.settings['cogs'][self.qualified_name.lower(
+            )]
         except KeyError:
             self.settings = {}
 
+    def generate_help_file(self):
+        help_path = self.bot.settings['website_help_dir']
+        if self.hidden:
+            if self.qualified_name in os.listdir(help_path):
+                os.remove(help_path + "/" + self.qualified_name)
+            return
+        
+        _ = []
+        for cmd in self.walk_commands():
+            if not cmd.hidden and cmd.parent is None:
+                _.append(cmd.qualified_name + cmd.signature +
+                            "," + str(cmd.help) + "\n")
+
+        if len(_) > 0:
+            _[-1] = _[-1].rstrip()
+        else:
+            #No commands, lets just delete the file.
+            if self.qualified_name in os.listdir(help_path):
+                os.remove(help_path + "/" + self.qualified_name)
+            return
+
+        with open(help_path + "/" + self.qualified_name, "w+") as f:
+            f.writelines(_)
+
+    def _fallback_setting(self, key):
+        """Fetches fallback setting in case self.bot.settings returns KeyError"""
+        # TODO: do this.
+        pass
 
     def get_guild_setting(self, guild_id: discord.Guild, setting_key, default=None):
         """ 
@@ -69,7 +97,8 @@ class KatCog(commands.Cog):
             If the guild has no key for setting_key, then return default
         """
         self.log.debug("fetching guild_setting")
-        guild_settings = self.sql.ensure_exists("KatGuild", guild_id=guild_id).settings
+        guild_settings = self.sql.ensure_exists(
+            "KatGuild", guild_id=guild_id).settings
         try:
             guild_settings = json.loads(guild_settings)
         except json.JSONDecodeError:
@@ -81,10 +110,9 @@ class KatCog(commands.Cog):
             _result = _result.get(x, {})
             self.log.debug(_result)
             if _result == {}:
-                self.log.warning("Key {} doesn't exist in {}".format(x, guild_settings))
+                self.log.warning(
+                    "Key {} doesn't exist in {}".format(x, guild_settings))
         return _result
-
-
 
     def get_guild_all_settings(self, guild_id):
         """
@@ -96,7 +124,6 @@ class KatCog(commands.Cog):
         except json.JSONDecodeError:
             return guild, {}
         return guild, guild_settings
-
 
     def set_guild_setting(self, guild_id: discord.Guild, setting_key, value):
         guild, guild_json = self.get_guild_all_settings(guild_id)
@@ -113,7 +140,6 @@ class KatCog(commands.Cog):
             dic = dic.setdefault(key, {})
         dic[keys[-1]] = value
 
-
     def ensure_guild_setting(self, guild_id: discord.Guild, setting_key, default):
         """
             Checks if a guild_setting of setting_key exists. If not it creates the key with the value of default
@@ -123,23 +149,25 @@ class KatCog(commands.Cog):
             # guild setting doesnt exist
             self.set_guild_setting(guild_id, setting_key, default)
 
-
-    ### Response stuff
+    # Response stuff
 
     def load_responses(self):
         # Load responses
-        self.responses['common'] = utils.read_resource("languages/english/common.json")
+        self.responses['common'] = utils.read_resource(
+            "languages/english/common.json")
         self.log.info("Loaded responses for common")
         try:
             # Try to load any cog-specific responses
-            #TODO: Per-guild languages
+            # TODO: Per-guild languages
             self.responses[self.qualified_name.lower()] = \
-            utils.read_resource("languages/english/{}.json".format(self.qualified_name.lower()))
-            
-            self.log.info("Loaded responses for {}".format(self.qualified_name))
-        except (FileNotFoundError, IOError):
-            self.log.warning("Failed to load Cog-Specific language file for `{}`".format(self.qualified_name))
+                utils.read_resource(
+                    "languages/english/{}.json".format(self.qualified_name.lower()))
 
+            self.log.info("Loaded responses for {}".format(
+                self.qualified_name))
+        except (FileNotFoundError, IOError):
+            self.log.warning(
+                "Failed to load Cog-Specific language file for `{}`".format(self.qualified_name))
 
     def get_response(self, response, **args):
         _path = response.split(".")
@@ -147,25 +175,28 @@ class KatCog(commands.Cog):
         for x in _path:
             _result = _result.get(x, {})
             if _result == {}:
-                raise KeyError("Key {} doesn't exist in {}".format(x, response))
+                raise KeyError(
+                    "Key {} doesn't exist in {}".format(x, response))
         choice = random.choice(_result).format(**args, cog=self, bot=self.bot)
         return choice
 
-    async def create_help_file(self):
-        await asyncio.sleep(5)
-        data = ""
-        for command in self.walk_commands():
-            if not command.hidden:
-                if command.short_doc == "":
-                    data += command.name + "||" + "No help provided." + "\n"
-                else:
-                    _ = command.short_doc.replace("<", "{")
-                    _ = _.replace(">", "}")
-                    data += command.name + "||" + _ + "\n"
-        if len(data) > 0:
-            with open('resources/kat_command_helps/' + self.qualified_name.lower(), 'w') as f:
-                f.write(data)
+    def get_embed(self, embed, **kwargs):
+        """Returns the embed JSON for embed, along with formatted args"""
+        _path = embed.split(".")
+        _result = self.responses
+        for x in _path:
+            _result = _result.get(x, {})
+            if _result == {}:
+                raise KeyError(
+                    "Key {} doesn't exist in {}".format(x, embed))
 
+        json_string = json.dumps(_result)
+
+        t = Template(json_string)
+        t = t.substitute(**kwargs)
+        self.log.debug(t)
+        _result = json.loads(t)
+        return _result
 
     def set_operator_level(self, operator_level: int):
         if 0 > operator_level > 4:
@@ -177,18 +208,19 @@ class KatCog(commands.Cog):
 
         self._operator_level = operator_level
 
-
     async def throw_command_error_to_message(self, ctx, error):
         exc_type, _, exc_traceback = sys.exc_info()
-        self.log.warning(f"{ctx.command} encountered an error: {error} : {exc_type} {exc_traceback}")
+        self.log.warning(
+            f"{ctx.command} encountered an error: {error} : {exc_type} {exc_traceback}")
         embed = discord.Embed(color=discord.Color.red())
-        embed.set_author(name="Command Failed", icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
-        embed.description = "```py\n{}\n```".format(traceback.format_exc(limit=2))
+        embed.set_author(name="Command Failed",
+                         icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
+        embed.description = "```py\n{}\n```".format(
+            traceback.format_exc(limit=2))
         await ctx.send(embed=embed)
 
-
     async def cog_command_error(self, ctx, error):
-        
+
         if isinstance(error, commands.MissingPermissions):
             await ctx.channel.send(self.get_response("common.error.missing_permissions", cmd=ctx.command))
             return
@@ -196,11 +228,12 @@ class KatCog(commands.Cog):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.channel.send(self.get_response("common.error.missing_args", args=error.param.name))
             return
-        
+
         try:
             self.log.exception(error.original)
         except:
             pass
+        self.log.warn("error: " + str(error))
         await ctx.channel.send(self.get_response('common.error.command_error'))
 
     # DAPI event
@@ -208,25 +241,25 @@ class KatCog(commands.Cog):
         self.log.info(
             f"[USER {ctx.author.name} | {ctx.author.id}] [GUILD {ctx.guild.name} | {ctx.guild.id}] Performed {ctx.command}")
 
-
     async def cog_check(self, ctx) -> bool:
         """Only allow speficied roles to invoke the commands in this cog."""
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
         # guild setting generation.
-        roles = guild.ensure_setting("roles", {'moderators':['moderator'], 'administrators':['administrator', 'admin']})
+        roles = guild.ensure_setting("roles", {'moderators': [
+                                     'moderator'], 'administrators': ['administrator', 'admin']})
 
         BOT_OWNER = [self.bot.app_info.owner.id]
         GUILD_OWNER = [self.bot.get_guild(guild.guild_id).owner.id] + BOT_OWNER
         ADMINISTRATOR_ROLES = roles['administrators']
         MODERATION_ROLES = roles['moderators'] + ADMINISTRATOR_ROLES
-        
-        # If operator_level is 
+
+        # If operator_level is
         # 1 then all commands in the cog can be ran by moderators+.
         # 2 then all commands in the cog can be ran by only admin roles.
         # 3 then only the guild owner can run the commands.
         # 4 then only bot owner can run the commands.
         # 0 means any user can use these commands.
-        
+
         try:
             if self._operator_level == KatCog.EVERYONE:
                 return True
@@ -242,25 +275,22 @@ class KatCog(commands.Cog):
 
             elif self._operator_level == KatCog.GUILD_OWNER:
                 return GUILD_OWNER[0] == ctx.author.id
-            
+
             elif self._operator_level == KatCog.BOT_OWNER:
                 return BOT_OWNER[0] == ctx.author.id
 
         except commands.errors.MissingAnyRole:
             await ctx.send(self.get_response('common.error.permission_error'))
             return False
-        
+
         except Exception as err:
             self.log.warn(err)
-
 
     def cog_unload(self):
         self.log.info(f"Unloading {self.qualified_name}")
         # New EventManager unload
         self.event_manager.destroy()
-        #self.sql.destroy()
+        # self.sql.destroy()
         self.run = False
         self.log.destroy()
         del self
-
-    
