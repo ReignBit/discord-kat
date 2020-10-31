@@ -12,7 +12,7 @@ import utilities.KatCog as KatCog
 class Debug(KatCog.KatCog):
     def __init__(self, bot):
         super().__init__(bot)
-
+        self.hidden = True
     @commands.command()
     async def uncaught_test(self, ctx):
         await ctx.send(0 / 0)

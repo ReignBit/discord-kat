@@ -19,7 +19,7 @@ from utilities.KatClasses import KatUser, KatMember, KatGuild, null
 class Birthday(KatCog.KatCog):
     def __init__(self, bot):
         super().__init__(bot)
-
+        self.hidden = True
 
     # @commands.Cog.listener()
     # async def on_kat_day_event(self):

@@ -210,6 +210,10 @@ class Kat(commands.Bot):
         for guild in self.guilds:
             self.sql.ensure_exists("KatGuild", guild_id=guild.id)
 
+        #TODO: Maybe find a better way to do this.
+        with open(self.settings['website_help_dir'] + "/kat_stats", "w+") as f:
+            f.write("{},{}".format(len(self.guilds), len(self.users)))
+
     def setup_events(self):
         if not self.is_first_boot:
             self.log.debug("Not first boot. Skipping event creation.")

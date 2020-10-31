@@ -13,6 +13,7 @@ class Anonymous(KatCog.KatCog):
     def __init__(self, bot):
         super().__init__(bot)
         self.rant_channel = None
+        self.hidden = True
 
     @commands.Cog.listener()
     async def on_message(self, message):

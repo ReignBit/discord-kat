@@ -2,6 +2,7 @@ from discord.ext import commands
 import discord
 import asyncio
 import sys
+import os
 import traceback
 import json
 import random
@@ -30,11 +31,13 @@ class KatCog(commands.Cog):
         self.dependencies = KatCog.DEPENDENCIES
         self.bot = bot
 
+        self.hidden = False # should this Cog be hidden from the help command?
+        self.generate_help_file()
+
         self.sql = orm_utilities.SqlEngine()
         self.sql.create_sql_session()
 
         self.log = KatLogger.get_logger(self.qualified_name)
-        self.bot.loop.create_task(self.create_help_file())
 
         # Load GLOBAL settings from config/
         self.load_settings()
@@ -58,6 +61,30 @@ class KatCog(commands.Cog):
             )]
         except KeyError:
             self.settings = {}
+
+    def generate_help_file(self):
+        help_path = self.bot.settings['website_help_dir']
+        if self.hidden:
+            if self.qualified_name in os.listdir(help_path):
+                os.remove(help_path + "/" + self.qualified_name)
+            return
+        
+        _ = []
+        for cmd in self.walk_commands():
+            if not cmd.hidden and cmd.parent is None:
+                _.append(cmd.qualified_name + cmd.signature +
+                            "," + str(cmd.help) + "\n")
+
+        if len(_) > 0:
+            _[-1] = _[-1].rstrip()
+        else:
+            #No commands, lets just delete the file.
+            if self.qualified_name in os.listdir(help_path):
+                os.remove(help_path + "/" + self.qualified_name)
+            return
+
+        with open(help_path + "/" + self.qualified_name, "w+") as f:
+            f.writelines(_)
 
     def _fallback_setting(self, key):
         """Fetches fallback setting in case self.bot.settings returns KeyError"""
@@ -171,22 +198,6 @@ class KatCog(commands.Cog):
         _result = json.loads(t)
         return _result
 
-    async def create_help_file(self):
-        """Generates the help page for the cog. Used in the website's help page"""
-        await asyncio.sleep(5)
-        data = ""
-        for command in self.walk_commands():
-            if not command.hidden:
-                if command.short_doc == "":
-                    data += command.name + "||" + "No help provided." + "\n"
-                else:
-                    _ = command.short_doc.replace("<", "{")
-                    _ = _.replace(">", "}")
-                    data += command.name + "||" + _ + "\n"
-        if len(data) > 0:
-            with open('resources/kat_command_helps/' + self.qualified_name.lower(), 'w') as f:
-                f.write(data)
-
     def set_operator_level(self, operator_level: int):
         if 0 > operator_level > 4:
             self.log.warn(
@@ -222,7 +233,7 @@ class KatCog(commands.Cog):
             self.log.exception(error.original)
         except:
             pass
-        self.log.warn("error: " + error)
+        self.log.warn("error: " + str(error))
         await ctx.channel.send(self.get_response('common.error.command_error'))
 
     # DAPI event

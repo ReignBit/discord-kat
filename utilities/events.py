@@ -23,6 +23,8 @@ import utilities.KatLogger as KatLogger
     # bot.extra_events = {'on_event_name': <methods that listen for this event>}
 
 
+    # TODO: Make singleton only.
+
 class EventManager:
     def __init__(self, bot, cog=None):
         if cog is not None:

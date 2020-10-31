@@ -24,6 +24,7 @@
         "user": "USER",
         "password": "PASSWORD"
     },
+    "website_help_dir": "wont work for public release",
     "cogs": {
         "core": {
             "restart_message_guild_id": 0,

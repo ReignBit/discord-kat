@@ -14,11 +14,11 @@ import utilities.KatCog as KatCog
 
 class Dyndns(KatCog.KatCog):
 
-    """Cog to update our Dynamic IP to GoDaddy's DNS records for REIGN-NETWORK.CO.UK"""
-    """Updates A record for host @ with KAT'S CURRENT EXTERNAL IP ADDRESS."""
+    """Cog to update our Dynamic IP in our DNS records."""
 
     def __init__(self, bot):
         super().__init__(bot)
+        self.hidden = True
         
         self.url = f"https://api.godaddy.com/v1/domains/{self.settings['domain']}/records/A/@"
         self.session = requests.Session()
@@ -49,7 +49,7 @@ class Dyndns(KatCog.KatCog):
             res = self.session.put(self.url, data, headers={
                                     'Content-Type': 'application/json'})
             self.log.debug(res.status_code)
-            if res.status_code == "200":
+            if res.status_code == 200:
                 self.log.info("Updated DNS Record. Checking if changed...")
                 self.log.warn(res.status_code)
                 self.log.debug(res)

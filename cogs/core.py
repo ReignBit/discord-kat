@@ -23,7 +23,7 @@ import utilities.KatClasses as KatClasses
 class Core(KatCog.KatCog):
     def __init__(self, bot):
         super().__init__(bot)
-
+        self.hidden = True
         ## Checksum Generation
         self.checksums = {}
         self.checksum_generation()
@@ -93,7 +93,7 @@ class Core(KatCog.KatCog):
     @commands.command(aliases=['?'])
     async def help(self, ctx):
         """Shows a link for this page"""
-        embed = discord.Embed(title="Help for Kat's Commands", colour=discord.Colour(0xe08a04), description="[Click here for a list of commands](http://reign-network.co.uk/kat_help.php)")
+        embed = discord.Embed(title="How to use Kat", colour=discord.Colour(0xe08a04), description=self.get_response("core.command.help") + self.get_response("core.command.help_link"))
         await ctx.send(embed=embed)
 
 
