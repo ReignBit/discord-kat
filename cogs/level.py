@@ -104,7 +104,7 @@ class Level(KatCog.KatCog):
         curr_level = member.lvl
 
 
-        awarded_xp = self.xp_algorithm(len(message.clean_content))
+        awarded_xp = self.xp_algorithm(len(message.clean_content), message.guild)
         new_xp = int(curr_xp + awarded_xp)
         new_level = self.calculate_level(new_xp)
 
