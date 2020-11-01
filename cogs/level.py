@@ -92,8 +92,8 @@ class Level(KatCog.KatCog):
 
 
     # Used when we need to award XP from message length.
-    def xp_algorithm(self, msglen):
-        return min(max((msglen / 0.9) * 0.3, 10), 200)
+    def xp_algorithm(self, msglen, guild):
+        return min(max((msglen / 0.9) * 0.3, 10), 200) * guild.ensure_exists("settings.level.xp_multi", "1.0")
 
 
     # The function that adds xp to user and calculates new levels.

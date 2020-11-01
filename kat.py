@@ -229,7 +229,7 @@ class Kat(commands.Bot):
     def get_custom_prefix(self, bot, message):
         """Callable, returns the prefix for the message's guild."""
         prefix = self.sql.ensure_exists(
-            "KatGuild", guild_id=message.guild.id).prefix
+            "KatGuild", guild_id=message.guild.id).ensure_setting("settings.prefix",self.settings['default_prefix'])
         return commands.when_mentioned_or(*prefix)(bot, message)
 
     def load_settings(self):
