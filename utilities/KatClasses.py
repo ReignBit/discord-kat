@@ -12,9 +12,16 @@ class KatGuild(Base):
     __tablename__ = "guild_table"
 
     guild_id = Column("guild_id", BigInteger, primary_key=True)
-    prefix = Column(String, default="$")
+    #prefix = Column(String, default="$")
     _settings = Column("guild_settings", TEXT(convert_unicode=True))
 
+    @property
+    def prefix(self):
+        return self.ensure_setting("settings.prefix", "$")
+
+    @prefix.setter
+    def set_prefix(self, new_prefix):
+        self.set_setting("settings.prefix", neW_prefix)
 
     @hybrid_property
     def settings(self):
