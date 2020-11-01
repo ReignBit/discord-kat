@@ -15,13 +15,13 @@ class KatGuild(Base):
     #prefix = Column(String, default="$")
     _settings = Column("guild_settings", TEXT(convert_unicode=True))
 
-    @property
+    @hybrid_property
     def prefix(self):
         return self.ensure_setting("settings.prefix", "$")
 
     @prefix.setter
-    def set_prefix(self, new_prefix):
-        self.set_setting("settings.prefix", neW_prefix)
+    def prefix(self, new_prefix):
+        self.set_setting("settings.prefix", new_prefix)
 
     @hybrid_property
     def settings(self):
