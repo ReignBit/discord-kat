@@ -71,6 +71,12 @@ class Kat(commands.Bot):
 
         os.system('title Kat v' + __version__ + " " + str(os.getpid()))
 
+        # delete any help files in %WEBROOT%/kat_command_helps
+        for helpFile in os.listdir(self.settings['website_help_dir']):
+            self.log.info("Removing {}...".format(
+                self.settings['website_help_dir'] + "/" + helpFile))
+            os.remove(self.settings['website_help_dir'] + "/" + helpFile)
+
         # super call to commands.Bot
         super().__init__(self.get_custom_prefix, **options)
 
@@ -211,8 +217,13 @@ class Kat(commands.Bot):
             self.sql.ensure_exists("KatGuild", guild_id=guild.id)
 
         #TODO: Maybe find a better way to do this.
-        with open(self.settings['website_help_dir'] + "/kat_stats", "w+") as f:
-            f.write("{},{}".format(len(self.guilds), len(self.users)))
+
+        if (self.app_info.name == "Yumi"):
+            with open(self.settings['website_help_dir'] + "/yumi_stats", "w+") as f:
+                f.write("{},{},{}".format("Online", len(self.guilds), len(self.users)))
+        else:
+            with open(self.settings['website_help_dir'] + "/kat_stats", "w+") as f:
+                f.write("{},{}".format(len(self.guilds), len(self.users)))
 
     def setup_events(self):
         if not self.is_first_boot:

@@ -14,6 +14,8 @@ class FailedToFindServiceException(Exception):
 class Orwell(KatCog.KatCog):
     def __init__(self, bot):
         super().__init__(bot)
+
+        self.hidden = True
         self.vote_msg = None
         self.voters = 0
         self.total_voters = 3
