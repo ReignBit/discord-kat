@@ -13,6 +13,7 @@ import utilities.KatCog as KatCog
 class Milsim(KatCog.KatCog):
     def __init__(self, bot):
         super().__init__(bot)
+        self.hidden = True
 
         self.notify_list = []
         self.write_list = []
