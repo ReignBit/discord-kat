@@ -7,6 +7,9 @@
     "command": {
         "clear": [
             ":wastebasket: Cleared `{amount}` messages!"
+        ],
+        "kick": [
+            ":small_red_triangle_down: **{member.display_name}#{member.discriminator}** has been kicked! Reason: `{reason}`"
         ]
     }
 }

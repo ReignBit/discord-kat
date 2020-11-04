@@ -61,13 +61,7 @@ def load_cog(bot, cog) -> Cog:
 def unload_cog(bot, cog):
     """Attempts to unload a cog from 'cogs/'"""
     
-    cog_name = ""
-    if "." in cog:
-        _ = cog.split('.')
-        for string in _:
-            cog_name += string.capitalize()
-    else:
-        cog_name = cog.capitalize()
+    cog_name = cog.split('.')[-1].capitalize()
 
     bot.log.debug(cog_name)
     try:

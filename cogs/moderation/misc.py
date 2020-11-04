@@ -16,7 +16,7 @@ class Misc(KatCog):
         self.set_operator_level(KatCog.EVERYONE)
     
     @commands.command()
-    @commands.has_permission(manage_messages=True)
+    @commands.has_permissions(manage_messages=True)
     async def clear(self, ctx, amount=2):
         """Clear up to <code>100</code> messages in a channel at a time. Messages must be younger than <code>14</code> days old."""
         amount += 1 # add one to make sure we also delete the response to the command.
@@ -34,12 +34,14 @@ class Misc(KatCog):
         await ctx.send(self.get_response("misc.command.clear", amount=amount-1), delete_after=10)
 
 
-    # TODO:
-    #   - mute / unmute user
-    #   - silence / unsilence a channel
-    #   - warns?
-    #   - 
-    
+
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def kick(self, ctx, member: discord.Member, *reason):
+        """Kicks a user from the server. If no reason is provided, then "No reason" is used."""
+        if member in ctx.guild.members:
+            #await self.bot.kick(member, reason)
+            await ctx.send(self.get_response("misc.command.kick",member=member, reason=" ".join(reason)))
 
     
 
