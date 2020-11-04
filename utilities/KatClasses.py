@@ -13,7 +13,7 @@ class KatGuild(Base):
 
     guild_id = Column("guild_id", BigInteger, primary_key=True)
     #prefix = Column(String, default="$")
-    _settings = Column("guild_settings", TEXT(convert_unicode=True))
+    _settings = Column("guild_settings", TEXT())
 
     @hybrid_property
     def prefix(self):

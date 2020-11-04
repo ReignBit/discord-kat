@@ -6,16 +6,20 @@ import sqlalchemy
 from utilities.KatClasses import sessionmaker, KatGuild, KatUser, KatMember
 import utilities.KatLogger as KatLogger
 
+
+# TODO: This needs a rewrite. It is too dependant on external code.
 class SqlEngine:
     MASTER_SQL = None
     COUNT = -1
-    def __init__(self, bot=None, local=True, use_kat_logger=True, standalone=False):
+    def __init__(self, bot=None, local=True, use_kat_logger=True, standalone=False, options=None):
         SqlEngine.COUNT += 1
         if use_kat_logger:
             self.log = KatLogger.get_logger("SQL")
             self.log.info("SQLEngine Instance {} Created".format(SqlEngine.COUNT))
 
-        # TODO:  REMOVE THIS :quick fix to run locally, not on server.
+        if standalone:
+            self._sql_engine = sqlalchemy.create_engine(f"mysql+mysqldb://{options['user']}:{options['password']}@{options['hostname']}/{options['db']}")
+        
         if bot is not None:
             self.bot = bot
             _sql_settings = self.bot.settings['sql']
