@@ -1,13 +1,14 @@
-from discord.ext import commands
-import discord
-import asyncio
+import json
 import sys
 import os
 import traceback
-import json
 import random
-from string import Template
+import inspect
 
+
+import asyncio
+from discord.ext import commands
+import discord
 
 import utilities.KatLogger as KatLogger
 import utilities.events
@@ -37,6 +38,7 @@ class KatCog(commands.Cog):
         self.sql = orm_utilities.SqlEngine()
         self.sql.create_sql_session()
 
+        #TODO: Find someway to have the logger name be <file_path>.<cogname> eg: moderation.misc
         self.log = KatLogger.get_logger(self.qualified_name)
 
         # Load GLOBAL settings from config/
@@ -246,7 +248,7 @@ class KatCog(commands.Cog):
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
         # guild setting generation.
         roles = guild.ensure_setting("roles", {'moderators': [
-                                     'moderator'], 'administrators': ['administrator', 'admin']})
+                                     '111111111111111111'], 'administrators': ['administrator', '111111111111111111']})
 
         BOT_OWNER = [self.bot.app_info.owner.id]
         GUILD_OWNER = [self.bot.get_guild(guild.guild_id).owner.id] + BOT_OWNER
@@ -288,9 +290,8 @@ class KatCog(commands.Cog):
 
     def cog_unload(self):
         self.log.info(f"Unloading {self.qualified_name}")
-        # New EventManager unload
-        self.event_manager.destroy()
-        # self.sql.destroy()
         self.run = False
+        self.event_manager.destroy()
+        self.sql.destroy()
         self.log.destroy()
         del self

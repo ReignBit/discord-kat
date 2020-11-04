@@ -34,16 +34,21 @@ def load_cog(bot, cog) -> Cog:
     
     # format the cog name correctly so we can fetch the instance.
     # since bot.load_extension doesn't return the cog...
-    cog_name = ""
-    if "." in cog:
-        _ = cog.split('.')
-        for string in _:
-            cog_name += string.capitalize()
-    else:
-        cog_name = cog.capitalize()
+    # cog_name = ""
+    # if "." in cog:
+    #     _ = cog.split('.')
+    #     for string in _:
+    #         cog_name += string.capitalize()
+    # else:
+    #     cog_name = cog.capitalize()
+
+
+    cog_name = cog.split('.')[-1].capitalize()
 
     try:
         bot.load_extension("cogs." + cog) # load the extension
+
+
         # loaded the cog.
         bot.log.info("Loaded %s." % cog_name)
         return cog_name,bot.get_cog(cog_name) 
