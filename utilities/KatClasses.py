@@ -9,11 +9,11 @@ Base = declarative_base()
 
 class KatGuild(Base):
     """Guild information from Kat DB."""
-    __tablename__ = "guild_table"
+    __tablename__ = "guild_data"
 
     guild_id = Column("guild_id", BigInteger, primary_key=True)
     #prefix = Column(String, default="$")
-    _settings = Column("guild_settings", TEXT(convert_unicode=True))
+    _settings = Column("guild_settings", TEXT())
 
     @hybrid_property
     def prefix(self):
@@ -86,7 +86,7 @@ class KatGuild(Base):
 
 class KatUser(Base):
     """User information from Kat DB."""
-    __tablename__ = "user_table"
+    __tablename__ = "user_data"
 
     user_id = Column("user_id", BigInteger, primary_key=True)
     birthday = Column(Date, default=None)
@@ -98,7 +98,7 @@ class KatUser(Base):
 class KatMember(Base):
     
     """Member information from Kat DB."""
-    __tablename__ = "level_data"
+    __tablename__ = "member_data"
 
     guild_id = Column(BigInteger, ForeignKey('guild_table.guild_id'), primary_key=True)
     user_id = Column(BigInteger, ForeignKey('user_table.user_id'), primary_key=True)

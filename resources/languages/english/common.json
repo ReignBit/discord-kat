@@ -11,6 +11,9 @@
         ],
         "missing_args": [
             ":sos: **Missing Argument**\n`{args}`"
+        ],
+        "member_not_found": [
+            ":x: Could not find a user called `{error}`"
         ]
     },
     "embeds": {

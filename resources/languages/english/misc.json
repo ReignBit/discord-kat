@@ -1,0 +1,21 @@
+{
+    "error": {
+        "clear_fail": [
+            ":sos: Failed to clear messages!\n\nTry again and make sure of the following:\n- Only try to **delete upto 100 messages** at a time.\n- Only try to delete messages that are **less than 14 days old**.*"
+        ]
+    },
+    "command": {
+        "clear": [
+            ":wastebasket: Cleared `{amount}` messages!"
+        ],
+        "kick": [
+            ":small_red_triangle_down: **{member.display_name}#{member.discriminator}** has been kicked by {kicker.display_name}#{kicker.discriminator}! Reason: `{reason}`"
+        ],
+        "ban": [
+            ":no_entry_sign: **{member.display_name}#{member.discriminator}** has been **Banned** by {kicker.display_name}#{kicker.discriminator}! Reason: `{reason}`"
+        ],
+        "purge": [
+            ":skull_crossbones: **{member.display_name}#{member.discriminator}** has been **Purged** by {kicker.display_name}#{kicker.discriminator}! Reason: `{reason}`"
+        ]
+    }
+}
