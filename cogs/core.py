@@ -268,19 +268,7 @@ class Core(KatCog.KatCog):
 
     @kat.command(hidden=True)
     async def reload(self, ctx, cog_name):
-        
-
-        cog = ""
-        if "." in cog_name:
-            _ = cog_name.split('.')
-            for string in _:
-                cog += string.capitalize()
-        else:
-            cog = cog_name.capitalize()
-
-        self.log.debug(cog)
-        self.log.debug(cog_name)
-        if cog not in self.bot.cogs:
+        if cog_name.split(".")[-1].capitalize() not in self.bot.cogs:
             await ctx.send(self.load_cog(cog_name))
             return
 

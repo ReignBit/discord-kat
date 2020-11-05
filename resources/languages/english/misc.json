@@ -9,7 +9,13 @@
             ":wastebasket: Cleared `{amount}` messages!"
         ],
         "kick": [
-            ":small_red_triangle_down: **{member.display_name}#{member.discriminator}** has been kicked! Reason: `{reason}`"
+            ":small_red_triangle_down: **{member.display_name}#{member.discriminator}** has been kicked by {kicker.display_name}#{kicker.discriminator}! Reason: `{reason}`"
+        ],
+        "ban": [
+            ":no_entry_sign: **{member.display_name}#{member.discriminator}** has been **Banned** by {kicker.display_name}#{kicker.discriminator}! Reason: `{reason}`"
+        ],
+        "purge": [
+            ":skull_crossbones: **{member.display_name}#{member.discriminator}** has been **Purged** by {kicker.display_name}#{kicker.discriminator}! Reason: `{reason}`"
         ]
     }
 }

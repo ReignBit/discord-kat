@@ -41,7 +41,7 @@ class SqlEngine:
     def destroy(self):
         self._sql_session.close()
         SqlEngine.COUNT -= 1
-        self.log.destroy(self.log.name)
+        self.log.destroy()
         del self
 
 

@@ -39,11 +39,33 @@ class Misc(KatCog):
     @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *reason):
         """Kicks a user from the server. If no reason is provided, then "No reason" is used."""
-        if member in ctx.guild.members:
-            #await self.bot.kick(member, reason)
-            await ctx.send(self.get_response("misc.command.kick",member=member, reason=" ".join(reason)))
+        if reason is None or reason == "" or len(reason) == 0:
+            reason = ["No", "Reason."]
 
-    
+        #await ctx.guild.kick(member, reason)
+        await ctx.send(self.get_response("misc.command.kick",member=member, reason=" ".join(reason), kicker=ctx.author))
+
+    @commands.command()
+    @commands.has_permissions(ban_members=True)
+    async def ban(self, ctx, member: discord.Member, *reason):
+        """Bans a user from the server. If no reason is provided, then "No reason" is used."""
+        if reason is None or reason == "":
+            reason = ["No", "Reason."]
+
+        #await ctx.guild.ban(member, reason, delete_message_days=0)
+        await ctx.send(self.get_response("misc.command.ban", member=member, reason=" ".join(reason), kicker=ctx.author))
+
+    @commands.command()
+    @commands.has_permissions(ban_members=True)
+    async def purge(self, ctx, member: discord.Member, *reason):
+        """Bans a user from the server, and deletes all of their messages from the past 7 days.
+        If no reason is provided, then "No reason" is used.
+        """
+        if reason is None or reason == "":
+            reason = ["No", "Reason."]
+
+        #await ctx.guild.ban(member, reason, delete_message_days=7)
+        await ctx.send(self.get_response("misc.command.purge", member=member, reason=" ".join(reason), kicker=ctx.author))
 
 def setup(bot):
     bot.add_cog(Misc(bot))

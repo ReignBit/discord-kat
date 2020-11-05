@@ -231,11 +231,16 @@ class KatCog(commands.Cog):
             await ctx.channel.send(self.get_response("common.error.missing_args", args=error.param.name))
             return
 
+        if isinstance(error, commands.MemberNotFound):
+            await ctx.channel.send(self.get_response("common.error.member_not_found", error=error.argument))
+            return
+
         try:
             self.log.exception(error.original)
         except:
             pass
         self.log.warn("error: " + str(error))
+        self.log.warn(str(type(error)))
         await ctx.channel.send(self.get_response('common.error.command_error'))
 
     # DAPI event
