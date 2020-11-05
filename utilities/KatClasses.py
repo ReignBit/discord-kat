@@ -100,8 +100,8 @@ class KatMember(Base):
     """Member information from Kat DB."""
     __tablename__ = "member_data"
 
-    guild_id = Column(BigInteger, ForeignKey('guild_table.guild_id'), primary_key=True)
-    user_id = Column(BigInteger, ForeignKey('user_table.user_id'), primary_key=True)
+    guild_id = Column(BigInteger, ForeignKey('guild_data.guild_id'), primary_key=True)
+    user_id = Column(BigInteger, ForeignKey('user_data.user_id'), primary_key=True)
     #TODO: Use getters and setter protection for these.
     xp = Column(Integer, default=1)
     lvl = Column(Integer, default=1)
