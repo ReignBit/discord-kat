@@ -2,7 +2,8 @@ import json
 
 import pytest
 
-from bot.utilities.KatClasses import KatUser, KatGuild, KatMember
+from utilities.KatClasses import KatUser, KatGuild, KatMember
+
 
 
 def test_sql_ensure_exists(setup):
@@ -17,3 +18,12 @@ def test_sql_ensure_exists(setup):
         "KatMember", guild_id=438542169855361025, user_id=172408031060033537)
     assert isinstance(member, KatMember)
 
+# def test_sql_member_data_read(setup):
+#     member = setup.ensure_exists(
+#         "KatMember", guild_id=438542169855361025, user_id=172408031060033537)
+    
+#     data = member.ensure_data("warnsys.warns", [])
+#     assert data == list
+    
+#     data = member.data
+#     assert isinstance(data, dict)
