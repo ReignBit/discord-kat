@@ -5,7 +5,7 @@ import traceback
 import random
 import inspect
 
-
+from string import Template
 import asyncio
 from discord.ext import commands
 import discord
@@ -33,18 +33,19 @@ class KatCog(commands.Cog):
         self.bot = bot
 
         self.hidden = False # should this Cog be hidden from the help command?
+        
+        #TODO: Find someway to have the logger name be <file_path>.<cogname> eg: moderation.misc
+        self.log = KatLogger.get_logger(self.qualified_name)
         self.generate_help_file()
 
         self.sql = orm_utilities.SqlEngine()
         self.sql.create_sql_session()
 
-        #TODO: Find someway to have the logger name be <file_path>.<cogname> eg: moderation.misc
-        self.log = KatLogger.get_logger(self.qualified_name)
-
         # Load GLOBAL settings from config/
         self.load_settings()
 
         # operator level for permissions.
+        # TODO: Rethink this strategy. This probably won't work, and we should just work with DiscordPy's solution.
         self._operator_level = 0
 
         # Response Handling.
@@ -65,28 +66,31 @@ class KatCog(commands.Cog):
             self.settings = {}
 
     def generate_help_file(self):
-        help_path = self.bot.settings['website_help_dir']
-        if self.hidden:
-            if self.qualified_name in os.listdir(help_path):
-                os.remove(help_path + "/" + self.qualified_name)
-            return
-        
-        _ = []
-        for cmd in self.walk_commands():
-            if not cmd.hidden and cmd.parent is None:
-                _.append(cmd.qualified_name + cmd.signature +
-                            "," + str(cmd.help) + "\n")
+        try:
+            help_path = self.bot.settings['website_help_dir']
+            if self.hidden:
+                if self.qualified_name in os.listdir(help_path):
+                    os.remove(help_path + "/" + self.qualified_name)
+                return
+            
+            _ = []
+            for cmd in self.walk_commands():
+                if not cmd.hidden and cmd.parent is None:
+                    _.append(cmd.qualified_name + cmd.signature +
+                                "," + str(cmd.help) + "\n")
 
-        if len(_) > 0:
-            _[-1] = _[-1].rstrip()
-        else:
-            #No commands, lets just delete the file.
-            if self.qualified_name in os.listdir(help_path):
-                os.remove(help_path + "/" + self.qualified_name)
-            return
+            if len(_) > 0:
+                _[-1] = _[-1].rstrip()
+            else:
+                #No commands, lets just delete the file.
+                if self.qualified_name in os.listdir(help_path):
+                    os.remove(help_path + "/" + self.qualified_name)
+                return
 
-        with open(help_path + "/" + self.qualified_name, "w+") as f:
-            f.writelines(_)
+            with open(help_path + "/" + self.qualified_name, "w+") as f:
+                f.writelines(_)
+        except:
+            self.log.warn("Failed to update commands on website!")
 
     def _fallback_setting(self, key):
         """Fetches fallback setting in case self.bot.settings returns KeyError"""
@@ -182,7 +186,7 @@ class KatCog(commands.Cog):
         choice = random.choice(_result).format(**args, cog=self, bot=self.bot)
         return choice
 
-    def get_embed(self, embed, **kwargs):
+    def get_embed(self, embed, **kwargs) -> dict:
         """Returns the embed JSON for embed, along with formatted args"""
         _path = embed.split(".")
         _result = self.responses
