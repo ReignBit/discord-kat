@@ -32,8 +32,11 @@ class Orwell(KatCog.KatCog):
 
         # Check if author has any of the roles, or if their userID matches.
         for role in roles:
-            if role in ctx.author.roles:
-                return True
+            self.log.debug(role)
+            self.log.debug(ctx.author.id)
+            for auth_role in ctx.author.roles:
+                if role == auth_role.id:
+                    return True
             if role == ctx.author.id:
                 return True
         return False
