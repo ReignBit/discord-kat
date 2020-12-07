@@ -95,6 +95,7 @@ class Kat(commands.Bot):
     @property
     def prefix(self):
         """Obsolete. Return default prefix."""
+        raise DeprecationWarning("Bot-wide prefixes are deprecated, instead fetch prefixes from Guild settings!")
         return self.default_prefix
 
     @property
