@@ -2,14 +2,14 @@ import json
 
 import pytest
 
-from bot.utilities.orm_utilities import SqlEngine
-from bot.utilities.KatClasses import KatGuild, KatMember, KatUser
+from utilities.orm_utilities import SqlEngine
+from utilities.KatClasses import KatGuild, KatMember, KatUser
 
 
 @pytest.fixture(scope="session")
 def setup():
     options = ""
-    with open('bot/config/config.json', 'r') as f:
+    with open('config/config.json', 'r') as f:
         options = f.read()
 
     options = json.loads(options)['sql']

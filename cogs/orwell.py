@@ -22,12 +22,20 @@ class Orwell(KatCog.KatCog):
 
     def is_role(self, ctx):
         roles = self.settings['allowed_roles']
-        if (ctx.author.top_role in roles) or ctx.author.id == self.bot.app_info.owner.id:
+        # Check if we are the bot owner
+        if ctx.author.id == self.bot.app_info.owner.id:
             return True
 
+        # Redundant check for owner incase app_info fails to populate for some reason.
         if ctx.author.id == 277438017692762112:
             return True
-    
+
+        # Check if author has any of the roles, or if their userID matches.
+        for role in roles:
+            if role in ctx.author.roles:
+                return True
+            if role == ctx.author.id:
+                return True
         return False
 
     def get_service(self, service_id=None):

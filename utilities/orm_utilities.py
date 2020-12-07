@@ -47,7 +47,13 @@ class SqlEngine:
 
     @contextmanager
     def get_sql_session(self):
+        #TODO: This should fix the "Session gone away" bug: https://trello.com/c/VAPHhEQh/107-sql-mysql-server-has-gone-away
+        if not self._sql_session:
+            self.create_sql_session()
         session = self._sql_session
+
+
+        self.log.debug(self._sql_session)
         try:
             yield session
         except:

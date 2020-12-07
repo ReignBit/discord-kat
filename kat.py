@@ -26,13 +26,13 @@ import utilities.events
 from utilities.KatClasses import sessionmaker, KatGuild, KatUser, KatMember
 import utilities.orm_utilities as orm_utilities
 
-__version__ = '3.0.0'
+__version__ = '3.1.0'
 
 
 class Kat(commands.Bot):
 
     LOGGER = KatLogger.get_logger(__name__)
-    os.system('cls')
+    os.system('clear')
 
     def __init__(self, **options):
         # Clean up latest.log ready for this instance's logging
@@ -45,6 +45,9 @@ class Kat(commands.Bot):
 
         self.code_line_count = self.calculate_lines()   # code line calculation
         self.settings = self.load_settings()  # settings from resources.settings.py
+        
+        ### SETTINGS ARE NOW POPULATED ###
+        
         # Set to True through command line, if set to True will not restart self, since orwell manages that.
         self.is_launched_through_orwell = False
         # Should we be in Maintenance mode?
@@ -69,16 +72,20 @@ class Kat(commands.Bot):
         # Instance of utilities.events.EventManager. Populated on_ready
         self.event_manager = None
 
-        os.system('title Kat v' + __version__ + " " + str(os.getpid()))
-
         # delete any help files in %WEBROOT%/kat_command_helps
-        for helpFile in os.listdir(self.settings['website_help_dir']):
-            self.log.info("Removing {}...".format(
-                self.settings['website_help_dir'] + "/" + helpFile))
-            os.remove(self.settings['website_help_dir'] + "/" + helpFile)
+        if self.branch == "master":
+            for helpFile in os.listdir(self.settings['website_help_dir']):
+                self.log.info("Removing {}...".format(
+                    self.settings['website_help_dir'] + "/" + helpFile))
+                os.remove(self.settings['website_help_dir'] + "/" + helpFile)
 
         # super call to commands.Bot
         super().__init__(self.get_custom_prefix, **options)
+
+    @property
+    def branch(self):
+        """Returns which production environment we are running"""
+        return self.settings['branch']
 
     @property
     def version(self):
@@ -88,6 +95,7 @@ class Kat(commands.Bot):
     @property
     def prefix(self):
         """Obsolete. Return default prefix."""
+        raise DeprecationWarning("Bot-wide prefixes are deprecated, instead fetch prefixes from Guild settings!")
         return self.default_prefix
 
     @property
@@ -217,13 +225,17 @@ class Kat(commands.Bot):
             self.sql.ensure_exists("KatGuild", guild_id=guild.id)
 
         #TODO: Maybe find a better way to do this.
-
-        if (self.app_info.name == "Yumi"):
-            with open(self.settings['website_help_dir'] + "/yumi_stats", "w+") as f:
-                f.write("{},{},{}".format("Online", len(self.guilds), len(self.users)))
-        else:
-            with open(self.settings['website_help_dir'] + "/kat_stats", "w+") as f:
-                f.write("{},{}".format(len(self.guilds), len(self.users)))
+        try:
+            if self.branch == "dev":
+                self.log.debug("Heys demons, its ya boi. Im writing to the kat_stats file.")
+                with open(self.settings['website_help_dir'] + "/yumi_stats", "w+") as f:
+                    f.write("{},{},{}".format("Online", len(self.guilds), len(self.users)))
+            else:
+                with open(self.settings['website_help_dir'] + "/kat_stats", "w+") as f:
+                    f.write("{},{}".format(len(self.guilds), len(self.users)))
+        except:
+            self.log.warning("Failed to update website status!")
+            pass
 
     def setup_events(self):
         if not self.is_first_boot:
