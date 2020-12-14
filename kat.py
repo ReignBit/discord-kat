@@ -28,10 +28,7 @@ from utilities.KatClasses import sessionmaker, KatGuild, KatUser, KatMember
 import utilities.orm_utilities as orm_utilities
 
 # TODO: Make sure this is good enough.
-try:
-	__version__ = subprocess.check_output('git', 'describe', '--dirty', '--tags', '--dirty', '--always')
-except:
-	__version__ = 'untracked'
+__version__ = str(subprocess.getoutput('git describe --dirty --tags --dirty --always').split('\n')[0])
 
 class Kat(commands.Bot):
 
@@ -43,6 +40,7 @@ class Kat(commands.Bot):
         self._clean_logs()
 
         self.log.info("Discord-py version: " + discord.__version__)
+        self.log.info("Kat version: " + __version__)
 
         # boot start time, used to calculate time taken to boot.
         self.start_time = time.time()
