@@ -121,3 +121,4 @@ start_kat MANUAL.bat
 *.bat
 resources/kat_command_helps/*
 resources/kat_command_helps/configurator
+resources/days/megu_done

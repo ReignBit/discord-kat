@@ -36,7 +36,7 @@ class KatCog(commands.Cog):
         
         #TODO: Find someway to have the logger name be <file_path>.<cogname> eg: moderation.misc
         self.log = KatLogger.get_logger(self.qualified_name)
-        self.generate_help_file()
+
 
         self.sql = orm_utilities.SqlEngine()
         self.sql.create_sql_session()
@@ -64,33 +64,6 @@ class KatCog(commands.Cog):
             )]
         except KeyError:
             self.settings = {}
-
-    def generate_help_file(self):
-        try:
-            help_path = self.bot.settings['website_help_dir']
-            if self.hidden:
-                if self.qualified_name in os.listdir(help_path):
-                    os.remove(help_path + "/" + self.qualified_name)
-                return
-            
-            _ = []
-            for cmd in self.walk_commands():
-                if not cmd.hidden and cmd.parent is None:
-                    _.append(cmd.qualified_name + cmd.signature +
-                                "," + str(cmd.help) + "\n")
-
-            if len(_) > 0:
-                _[-1] = _[-1].rstrip()
-            else:
-                #No commands, lets just delete the file.
-                if self.qualified_name in os.listdir(help_path):
-                    os.remove(help_path + "/" + self.qualified_name)
-                return
-
-            with open(help_path + "/" + self.qualified_name, "w+") as f:
-                f.writelines(_)
-        except:
-            self.log.warn("Failed to update commands on website!")
 
     def _fallback_setting(self, key):
         """Fetches fallback setting in case self.bot.settings returns KeyError"""

@@ -51,9 +51,6 @@ class SqlEngine:
         if not self._sql_session:
             self.create_sql_session()
         session = self._sql_session
-
-
-        self.log.debug(self._sql_session)
         try:
             yield session
         except:
