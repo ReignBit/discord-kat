@@ -24,18 +24,17 @@
         "user": "USER",
         "password": "PASSWORD"
     },
-    "website_help_dir": "wont work for public release",
     "cogs": {
         "core": {
             "restart_message_guild_id": 0,
             "restart_message_channel_id": 0,
             "ensure_file_integrity": [
-                "cogs/core.py",
-                "kat.py",
-                "utilities/KatCog.py",
-                "utilities/events.py",
-                "utilities/KatClasses.py",
-                "utilities/orm_utilities.py"
+                "bot/cogs/core.py",
+                "bot/__main__.py",
+                "bot/utils/extensions.py",
+                "bot/utils/events.py",
+                "bot/utils/models.py",
+                "bot/utils/database.py"
             ]
         },
         "dyndns": {
