@@ -8,22 +8,19 @@ Join Kat's Dev Server: https://discord.gg/VFBy7faTPP
 A full list of commands and their use are available on the website. This list of commands is no longer updated and may be out of date.
 
 #### Administration
- .$clear
- .$kick <user> [Reason]
- .$ban <user> [Reason]
- .$config
-
+ - $clear
+ - $kick <user> [Reason]
+ - $ban <user> [Reason]
+ - $config \
 #### Fun
- .$hitormiss
- .$owofier
- .$emote <action> [User]
-
+ - $hitormiss
+ - $owofier
+ - $emote <action> [User] \
 #### Welcomer
- .$welcomer
+ - $welcomer
 
 ## Self-Hosting
 Kat has not been tested for self-hosting, and is only on GitHub for version control. \
-We strongly recommend to instead add our instance of Kat to your discord server:
-
+We may in the future think about releasing Kat for self-host use, but as of now we host Kat ourselves.\ You can invite her to your server here: \
 https://kat.reign-network.co.uk/invite
 
