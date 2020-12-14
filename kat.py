@@ -11,6 +11,7 @@ from datetime import datetime
 import asyncio
 from contextlib import contextmanager
 from pathlib import Path
+import subprocess
 
 # THIRD-PARTY
 import discord
@@ -26,8 +27,11 @@ import utilities.events
 from utilities.KatClasses import sessionmaker, KatGuild, KatUser, KatMember
 import utilities.orm_utilities as orm_utilities
 
-__version__ = '3.1.0'
-
+# TODO: Make sure this is good enough.
+try:
+	__version__ = subprocess.check_output('git', 'describe', '--dirty', '--tags', '--dirty', '--always')
+except:
+	__version__ = 'untracked'
 
 class Kat(commands.Bot):
 
