@@ -11,11 +11,11 @@ A full list of commands and their use are available on the website. This list of
  - $clear
  - $kick <user> [Reason]
  - $ban <user> [Reason]
- - $config \
+ - $config
 #### Fun
  - $hitormiss
  - $owofier
- - $emote <action> [User] \
+ - $emote <action> [User]
 #### Welcomer
  - $welcomer
 
