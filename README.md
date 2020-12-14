@@ -36,6 +36,3 @@ Changes to the following files are needed:
     utilites/orm_utilities.py
 ```
 Good luck!
-
-
-
