@@ -35,5 +35,9 @@ jobs:
           pip install pytest
           pip install -r requirements.txt
       - name: Test with pytest
+        env:
+          sql-pass: ${{ secrets.SQL_PASSWORD }}
+          sql-user: ${{ secrets.SQL_USER }}
+          sql-db: ${{ secrets.SQL_DB }}
         run: |
           pytest
