@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from utilities.orm_utilities import SqlEngine
-from utilities.KatClasses import KatGuild, KatMember, KatUser
+from bot.utils.database import SqlEngine
+from bot.utils.models import KatGuild, KatMember, KatUser
 
 
 @pytest.fixture(scope="session")

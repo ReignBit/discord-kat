@@ -2,9 +2,9 @@ import json
 
 import pytest
 
-from utilities.orm_utilities import SqlEngine
-from utilities.KatClasses import KatUser, KatGuild, KatMember
-from cogs.moderation.warnsys import Warn
+from bot.utils.database import SqlEngine
+from bot.utils.models import KatUser, KatGuild, KatMember
+from bot.cogs.moderation.warnsys import Warn
 
 
 

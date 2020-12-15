@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from utilities.KatClasses import KatUser, KatGuild, KatMember
+from bot.utils.models import KatUser, KatGuild, KatMember
 
 
 
