@@ -12,7 +12,7 @@ class Dyndns(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
         self.hidden = True
-        
+
         self.url = f"https://api.godaddy.com/v1/domains/{self.settings['domain']}/records/A/@"
         self.session = requests.Session()
 

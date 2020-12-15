@@ -52,7 +52,7 @@ class Core(KatCog):
         self.log.info("Generated checksums for core files.")
 
     @commands.Cog.listener()
-    async def on_kat_minute_event(self):      
+    async def on_kat_minute_event(self):
         checksums_now = metrics.generate_checksums(self.settings['ensure_file_integrity'])
         if checksums_now != self.checksums:
             self.log.warning("CHECKSUM CHECK FAILED FOR AT LEAST 1 PROTECTED FILE [{}/{}]".format(10 - self.checksum_checks, 10))
@@ -76,14 +76,14 @@ class Core(KatCog):
             name = self.get_response("core.generic.kat_ready")
 
             # TODO: Change this to the new 'Custom Status' when discord-py is updated!
-            # Update: Still no custom status' :( waiting for discord 
+            # Update: Still no custom status' :( waiting for discord
             game = discord.Game(name)
             await self.bot.change_presence(status=discord.Status.online, activity=game)
 
         if self.bot.maintenance_mode:
             await self.bot.change_presence(status=discord.Status.idle, activity=discord.Game(self.get_response('core.generic.kat_restart_scheduled')))
 
-    
+
     #### Commands
     @commands.command(aliases=['?'])
     async def help(self, ctx):
@@ -104,7 +104,7 @@ class Core(KatCog):
     @commands.group(hidden=True)
     async def kat(self, ctx):
         if not perms.is_author(self.bot, ctx.author.id):
-            return  
+            return
 
     def check(self, msg):
         if msg.author.id == self.bot.app_info.owner.id:
@@ -122,7 +122,7 @@ class Core(KatCog):
             for guild in self.bot.guilds:
                 if guild.owner not in msgd_owners:
                     msgd_owners.append(guild.owner)
-                    
+
                     if guild.owner.id == 172408031060033537:
                         await guild.owner.send(" ".join(announcement))
 
@@ -143,7 +143,7 @@ class Core(KatCog):
             string = f"around `{int(now / 60)}` minutes."
         else:
             string = f"around `{int(now / 60 / 60)}` hours."
-        
+
         embed.description = f"Kat was started at `{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))}`, and has been running for {string}."
         metrics = self.collect_metrics().items()
         for metric, value in metrics:
@@ -185,13 +185,13 @@ class Core(KatCog):
             embed.set_author(name="Execution Succeeded", icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1")
             embed.description = "```py\n{}\n```".format(self.output)
             await ctx.send(embed=embed)
-        
+
         except Exception:
             embed = discord.Embed(color=discord.Color.red())
             embed.set_author(name="Execution Failed", icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
             embed.description = "```py\n{}\n```".format(traceback.format_exc())
             await ctx.send(embed=embed)
-        
+
 
     @kat.command(hidden=True)
     @commands.is_owner()
@@ -201,7 +201,7 @@ class Core(KatCog):
             exec("import " + arg)
             _ = None
             exec("_ = " +arg + ".__version__")
-            self.output = arg + _ 
+            self.output = arg + _
             embed = discord.Embed(color=discord.Color.green())
             embed.set_author(name="Execution Succeeded", icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1")
             embed.description = "```py\n{}\n```".format(self.output)
@@ -217,13 +217,13 @@ class Core(KatCog):
         try:
             # Attempt to load the cog.
             name, cog = extensions.load_cog(self.bot, cog_name)
-            
+
             cmds = ""
             for k, j in zip([c.qualified_name for c in cog.walk_commands()], [c.signature for c in cog.walk_commands()]):
                 cmds += "{} : {}\n".format(k, j)
 
             return self.get_response("core.command.kat_load", cmds=cmds, cog_name=cog.qualified_name)
-            
+
         except commands.ExtensionNotFound:
             return self.get_response("core.error.ExtensionNotFound")
         except commands.ExtensionAlreadyLoaded:
@@ -296,7 +296,7 @@ class Core(KatCog):
         embed.description = "```py\n{}\n```".format(_)
         await ctx.send(embed=embed)
 
-    
+
     @kat.command(hidden=True)
     async def reloadresp(self, ctx):
         for cog in self.bot.cogs:
@@ -309,12 +309,12 @@ class Core(KatCog):
         for k,v in self.bot.event_manager._events.items():
                 string += "{}: {}\n\n".format(k,v)
         for cog in self.bot.cogs:
-            if len(self.bot.get_cog(cog).event_manager._events) > 0: 
+            if len(self.bot.get_cog(cog).event_manager._events) > 0:
                 string += "{}\n".format(cog)
                 for k,v in self.bot.get_cog(cog).event_manager._events.items():
                     string += "{}: {}\n\n".format(k,v)
         string += "```"
         await ctx.send(string)
-                        
+
 def setup(bot):
     bot.add_cog(Core(bot))

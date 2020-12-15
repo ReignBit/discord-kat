@@ -15,7 +15,7 @@ from bot.utils.models import KatUser, KatGuild, KatMember
 class Level(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
-        
+
 
         # This announcement attaches itself to $level and $leaderboard. Use this to announce things todo with levels.
         self.announcement = ""
@@ -32,7 +32,7 @@ class Level(KatCog):
 
         # Instance variables
         self.global_freeze = False      #global level freeze. Overrides guild settings if set to True
-        
+
         self.debug_mode = True          #Extra verbosity when user's gain xp.
         if self.bot.maintenance_mode:
             self.global_freeze = True
@@ -75,7 +75,7 @@ class Level(KatCog):
             # If something goes wrong then freeze levels.
             return True
 
-    
+
     # Used only on cog_load. Not used for calculation, just for visual.
     def generate_level_boundaries(self, amount):
         """Generates level boundaries, used only for $level"""
@@ -114,8 +114,8 @@ class Level(KatCog):
     # Gets a level from xp amount
     def calculate_level(self, xp):
         return int((1 + math.sqrt(1 + 8 * (xp) / 40)) / 2)
-            
-        
+
+
     @commands.group()
     async def level(self, ctx):
         """Shows your current XP and level"""
@@ -157,7 +157,7 @@ class Level(KatCog):
                     self.log.info("Deleting user_id {} from the DB.".format(leader.user_id))
                     self.sql.query("KatUser").filter_by(user_id=leader.user_id).delete()
                     leaders.pop(leaders.index(leader))
-                    
+
                 string += "{}. {}   |   `{}`/`{}`\n".format(leaders.index(leader) + 1, username, leader.lvl, leader.xp)
         except Exception as e:
             self.log.exception(e)

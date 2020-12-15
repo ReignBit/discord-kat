@@ -46,7 +46,7 @@ class Fun(KatCog):
             # load the GIFs using the urls for the smaller GIF sizes
             raw = json.loads(r.content)['results']
             _ = raw[random.randrange(0, len(raw))]['media'][0]['gif']['url']
-            
+
             while _ == "https://media.tenor.com/images/4bdc2faacb4abfc4fc6f9c8b759cd583/tenor.gif":
                 _ = raw[random.randrange(0, len(raw))]['media'][0]['gif']['url']
             return _
@@ -73,7 +73,7 @@ class Fun(KatCog):
                     "everyone" : "kisses everyone! <3",
                     "user" : "kisses {user.display_name} Aww!",
                     "kat" : "kisses Ka- Wait a minute! O.o"
-                } 
+                }
         """
         if user is None:
             embed = discord.Embed(title=f"{ctx.author.display_name} " + responses['everyone'])
@@ -83,12 +83,12 @@ class Fun(KatCog):
                 embed = discord.Embed(title=f"{ctx.author.display_name} " + responses['user'].format(user))
             elif user.id == 379153719180394498:
                 embed = discord.Embed(title=responses['kat'])
-        
+
         embed.set_image(url=gif)
         embed.colour = color
         return embed
-        
-    
+
+
 
     @commands.Cog.listener()
     async def on_kat_hour_event(self):
@@ -151,16 +151,16 @@ class Fun(KatCog):
     async def spank(self, ctx, user: discord.User=None):
         """Spank ($spank <mention>)"""
         gif = await self._get_gif("anime%20spank")
-        
+
         responses = {
             'everyone': "spanks everyone!",
             'user': "spanks {user.display_name} kinky!",
             'kat': "I-I'm sorry! ;-;"
         }
-        
+
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
         await ctx.channel.send(embed=embed)
-       
+
 
 
     @commands.command()
@@ -173,10 +173,10 @@ class Fun(KatCog):
             'user': "takes a nibble of {user.display_name} tasty!",
             'kat': "D-do I taste good?"
         }
-        
+
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
         await ctx.channel.send(embed=embed)
-    
+
 
     @commands.command(aliases=['cum'])
     async def lewd(self, ctx, user: discord.User=None):
@@ -188,7 +188,7 @@ class Fun(KatCog):
             'user': "lewdifies {user.display_name} How lewd!",
             'kat': "Hentai!"
         }
-        
+
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
         await ctx.channel.send(embed=embed)
 
@@ -203,11 +203,11 @@ class Fun(KatCog):
             'user': "hands {user.display_name} a flower!",
             'kat': "A flower for me? O.O"
         }
-        
+
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
         await ctx.channel.send(embed=embed)
 
-    
+
     @commands.command(aliases=['murder'])
     async def kill(self, ctx, user: discord.User=None):
         """Kill someone ($kill <mention>)"""
@@ -218,7 +218,7 @@ class Fun(KatCog):
             'user': "kills {user.display_name}! F",
             'kat': "[insert death noises here]"
         }
-        
+
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
         await ctx.channel.send(embed=embed)
 
@@ -351,7 +351,7 @@ class Fun(KatCog):
     async def random(self, ctx, *args):
         """Let Kat choose from a list of inputs ($random 1 2 3 4 ...)"""
         if args is None:
-            
+
             raise IndexError("Missing list of items to choose from.")
         await ctx.send("**Hmm... I pick `{}`!**".format(random.choice(args)))
 
@@ -378,7 +378,7 @@ class Fun(KatCog):
         last_message = last_message.replace("thi", "wi")
 
         await ctx.send(last_message)
-    
+
 
 
 def setup(bot):

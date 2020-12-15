@@ -120,5 +120,5 @@ cogs/Cog Formatting.txt
 start_kat MANUAL.bat
 *.bat
 bot/resources/days/
-bot/resources/milsim/
+bot/resources/milsim/*
 bot/resources/opus/

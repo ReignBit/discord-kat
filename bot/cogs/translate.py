@@ -109,7 +109,7 @@ class Translate(KatCog):
             # send the list to authors pm box
             await ctx.author.send("```apache\n{}```".format(_))
             return
-    
+
         # from_lang : to_lang
         if ":" in lang:
             from_lang = lang.split(':')[0]
@@ -156,7 +156,7 @@ class Translate(KatCog):
 
 
     @commands.command(aliases=['ttext'])
-    async def translatetext(self, ctx, lang='en'):     
+    async def translatetext(self, ctx, lang='en'):
         """Translate text in the message that was sent by the author"""
 
         # Get rid of extra text from msg
@@ -164,7 +164,7 @@ class Translate(KatCog):
         if "$ttext" in msg:
             msg = msg.replace("$ttext","")
         else:
-            msg = msg.replace("$translatetext","")  
+            msg = msg.replace("$translatetext","")
         await ctx.send(msg)
 
 
@@ -187,7 +187,7 @@ class Translate(KatCog):
 
 
 
-        
+
 
 def setup(bot):
     bot.add_cog(Translate(bot))

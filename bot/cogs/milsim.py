@@ -37,12 +37,12 @@ class Milsim(KatCog):
             self.is_milsim_scheduled = False
             await self.announcement_message.channel.send("@here", embed=embed)
             await self.announcement_message.delete()
-            
+
         if date == "" or time == "":
             await ctx.send("You have not specified a date and/or time. `$milsim <date DD/MM/YY> <time HH:MM UTC>`")
             return
         else:
-            
+
             if self.is_milsim_scheduled:
                 await ctx.send("A milsim session has already been scheduled. To start a new one, you must first cancel the existing session.\n`$milsim cancel`")
 

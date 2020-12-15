@@ -55,11 +55,11 @@ class Orwell(KatCog):
         services = result.json()
         self.log.debug("Recieved ARES API with message: " + services['message'])
         return services['data']
-    
+
     def start_service(self, service_id):
         result = requests.request("POST", f"{self.settings['apihost']}/services/{service_id}/start", auth=requests.auth.HTTPBasicAuth(self.settings['user'], self.settings['pass']))
         return result
-    
+
     def stop_service(self, service_id):
         result = requests.request("POST", f"{self.settings['apihost']}/services/{service_id}/stop", auth=requests.auth.HTTPBasicAuth(self.settings['user'], self.settings['pass']))
         return result
@@ -109,7 +109,7 @@ class Orwell(KatCog):
         else:
             mention = self.bot.app_info.owner.mention
             embed.description = "Service failed to start."
-        
+
         await ctx.send(mention, embed=embed)
 
 
@@ -125,15 +125,15 @@ class Orwell(KatCog):
         mention = None
         if result.status_code == 200:
             data = result.json()['data']
-            
+
             embed.description = "Service stopped successfully."
             embed.add_field(name="**" + data['name'] + "**", value="🟥 " + data['service_id'], inline=False)
         else:
             mention = self.bot.app_info.owner.mention
             embed.description = "Service failed to stop."
-        
+
         await ctx.send(mention, embed=embed)
-        
+
     @servers.command()
     async def status(self, ctx, id):
         try:
@@ -147,7 +147,7 @@ class Orwell(KatCog):
             embed = discord.Embed(colour=discord.Colour(0x2a8550))
             embed.set_author(name=f"Failed to find service", icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
             embed.description = f"No service with the id of `{id}` could be found."
-        
+
         await ctx.send(embed=embed)
 
     @servers.command()
@@ -180,6 +180,6 @@ class Orwell(KatCog):
         finally:
             await ctx.send(embed=embed)
 
-    
+
 def setup(bot):
     bot.add_cog(Orwell(bot))

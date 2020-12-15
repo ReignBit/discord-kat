@@ -17,7 +17,7 @@ class Ttt(KatCog):
         if pct > 1 or pct < 0:
             await ctx.send("Percent must be between 0 and 1!")
             return
-        
+
         self.pct = pct
         await ctx.send(f"Set traitor percent to {pct * 100}%")
 
@@ -37,13 +37,13 @@ class Ttt(KatCog):
         for member in ctx.author.voice.channel.members:
             if not member.bot:
                 players.append(member)
-        
+
         while traitor_amount > 0:
             for player in players:
                 if random.random() > 0.6 and traitor_amount > 0:
                     traitors.append(player)
                     traitor_amount -= 1
-        
+
         # role notification
         for player in players:
             if player in traitors:
@@ -52,7 +52,7 @@ class Ttt(KatCog):
             else:
                 await player.send("You are an innocent!")
                 self.log.info(f"Send role [INNOCENT] to [{player.display_name}]")
-        
+
 
         for traitor in traitors:
             string = ", ".join([x.display_name for x in traitors])

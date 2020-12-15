@@ -27,7 +27,7 @@ class Welcomer(KatCog.KatCog):
         self.bot.sql.custom_query("INSERT INTO `cog_welcomer_guild_data`(`guild_id) VALUES ({})".format(guild.id))
         self.bot.sql.commit()
 
-    
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
         guild = member.guild
@@ -54,7 +54,7 @@ class Welcomer(KatCog.KatCog):
                 await ctx.guild.get_channel(welcome_msg[0]['channel_id']).send(ctx.author.mention, embed=embed)
             except AttributeError:
                 await ctx.send(":x: | Invalid channel set.")
-        
+
         else:
             self.bot.sql.custom_query("INSERT INTO `cog_welcomer_guild_data` (`guild_id`) VALUES ({})".format(ctx.guild.id))
             self.bot.sql.commit()

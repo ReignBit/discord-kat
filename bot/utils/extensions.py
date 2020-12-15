@@ -59,7 +59,7 @@ class KatCog(commands.Cog):
         pass
 
     def get_guild_setting(self, guild_id: discord.Guild, setting_key, default=None):
-        """ 
+        """
             Attempt to retrieve a guild setting (setting_key) from the DB
             If the guild has no key for setting_key, then return default
         """

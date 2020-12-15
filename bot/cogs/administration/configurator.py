@@ -47,7 +47,7 @@ class Configurator(KatCog):
     @config.group()
     async def roles(self, ctx):
         """Lists the current Administrator and Moderator roles for the guild"""
-        
+
         if ctx.invoked_subcommand is not None:
             return
 
@@ -110,7 +110,7 @@ class Configurator(KatCog):
             self._add_to_admin(role, guild)
 
         await ctx.send("Set {} to {}".format(role.name, {'mod': "Moderator", 'admin':"Administrator"}.get(group, "Unknown")))
- 
+
 
     @config.command()
     async def prefix(self, ctx, new_prefix=None):

@@ -11,7 +11,7 @@ import bot.utils.permissions as permissions
 class Config(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
-    
+
     @commands.group()
     async def config(self, ctx):
         """[Administrator] Change the guild's config for Kat"""

@@ -100,7 +100,7 @@ class SqlEngine:
             return guild.prefix
 
     def ensure_exists(self, kat_class, guild_id=None, user_id=None) -> Union[KatGuild, KatUser, KatMember]:
-        """Ensures that the Object relation exists in the DB and returns the result. 
+        """Ensures that the Object relation exists in the DB and returns the result.
            If one is not found an entry is generated and returned.
         """
 

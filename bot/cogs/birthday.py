@@ -24,7 +24,7 @@ class Birthday(KatCog.KatCog):
     # @commands.Cog.listener()
     # async def on_kat_day_event(self):
     #     self.log.info("Performing daily birthday checks")
-        
+
     #     # select all those who have birthdays (NOT NULL)
     #     birthday_users = self.bot.sql_session.query(KatUser).filter(KatUser.birthday != null).all()
 
@@ -46,11 +46,11 @@ class Birthday(KatCog.KatCog):
         r = requests.get(
         "https://api.tenor.com/v1/search?q={}&key=4KDPUPUVOVRW&limit=20&anon_id=312ced313baf42079d1588df7e032c69".format(search_query))
         if r.status_code == 200:
-            
+
             # load the GIFs using the urls for the smaller GIF sizes
             raw = json.loads(r.content)['results']
             _ = raw[random.randrange(0, len(raw))]['media'][0]['gif']['url']
-            
+
             while _ == "https://media.tenor.com/images/4bdc2faacb4abfc4fc6f9c8b759cd583/tenor.gif":
                 _ = raw[random.randrange(0, len(raw))]['media'][0]['gif']['url']
             return _
@@ -64,9 +64,9 @@ class Birthday(KatCog.KatCog):
 
         # KAT DEV SERVER / KAT-REPORTS TO TEST.
         guild = discord.utils.get(self.bot.guilds, id=438542169855361025)
-        channel = discord.utils.get(guild.channels, id=495410881140621312)        
-        
-        
+        channel = discord.utils.get(guild.channels, id=495410881140621312)
+
+
         age_map = {
             0:'th',
             1:'st',
@@ -79,10 +79,10 @@ class Birthday(KatCog.KatCog):
             8:'th',
             9:'th',
         }
-        
+
         # age = str(datetime.datetime.now().year - birthday.year)
         # age = age + age_map[int(age[-1:])]
-        
+
         embed = discord.Embed(title=":confetti_ball: {}'s Birthday! :confetti_ball: ".format(guild.get_member(user_id).display_name),
                     colour=discord.Colour(0x739e85), description="Happy birthday to {}".format(guild.get_member(user_id).mention))
         embed.set_image(url=await self._get_gif("anime%20birthday"))
@@ -101,7 +101,7 @@ class Birthday(KatCog.KatCog):
     @commands.Cog.listener()
     async def on_message(self, message):
         guild = discord.utils.get(self.bot.guilds, id=311612862554439692)
-        
+
         if (type(message.channel) is discord.channel.DMChannel and message.author in guild.members and message.author != self.bot.user):
             self.log.debug("Messaged from DMs")
             if message.content.startswith("BDAY "):
@@ -109,13 +109,13 @@ class Birthday(KatCog.KatCog):
                 raw_date = message.content.split(" ")[1]
 
                 #format date into a datetime Obj for uniform formatting
-                birthday = datetime.datetime.strptime(raw_date, "%Y-%m-%d") #YYYY-mm-dd         
-                birthday_str = "{}-{}-{}".format(birthday.year, birthday.month, birthday.day)               
-                
+                birthday = datetime.datetime.strptime(raw_date, "%Y-%m-%d") #YYYY-mm-dd
+                birthday_str = "{}-{}-{}".format(birthday.year, birthday.month, birthday.day)
+
                 user = self.bot.sql_session.query(KatUser).get(message.author.id)
                 user.birthday = birthday_str
                 self.bot.sql_session.commit()
-                
+
                 self.log.info("Updated Birthday information for [{}|{}]".format(message.author.name, message.author.id))
                 await message.channel.send("Updated your Birthday information!")
 
