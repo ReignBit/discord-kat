@@ -1,4 +1,7 @@
 # Kat Discord Bot (Version 3.2.2)
+
+![master](https://github.com/ReignBit/discord-kat/workflows/test-units/badge.svg?branch=master)
+
 A customizable administration bot originally designed for Reign Network, complete with an interactive webpanel for easy configuring for user's guilds.
 
 For more information about Kat: https://kat.reign-network.co.uk

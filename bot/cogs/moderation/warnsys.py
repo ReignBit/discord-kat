@@ -76,7 +76,7 @@ class Warnsys(KatCog):
 
             await ctx.send(embed=embed)
 
-    @warn.command(name="add")
+    @warns.command(name="add")
     async def warn_add(self, ctx, user: discord.Member, *reason):
         """Adds a warning to a user with a reason"""
         if reason is None or reason == "" or len(reason) == 0:
