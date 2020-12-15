@@ -27,4 +27,3 @@ def test_data_fetch(setup: SqlEngine):
         session.commit()
 
     assert member.get_setting("warnsys.warns") == warn_list
-
