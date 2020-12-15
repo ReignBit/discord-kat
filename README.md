@@ -1,4 +1,4 @@
-# Kat Discord Bot (Version 3.1.2)
+# Kat Discord Bot (Version 3.2.2)
 A customizable administration bot originally designed for Reign Network, complete with an interactive webpanel for easy configuring for user's guilds.
 
 For more information about Kat: https://kat.reign-network.co.uk
