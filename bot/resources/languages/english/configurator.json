@@ -1,0 +1,53 @@
+{
+    "error": {
+        "prefix_banned": [
+            ":sos: Failed to set prefix!\n\n{prefix} is unable to be used as a prefix"
+        ],
+        "level_multi_invalid": [
+            ":sos: **Invalid XP multiplier**\nXP Multiplier needs to be a decimal number between 0 and 2.5"
+        ]
+    },
+    "command": {
+        "prefix_none": [
+            ":grey_question: Your current prefix is `{curr_prefix}`.\nYou can change this by doing `{curr_prefix}config prefix <new prefix>`\n*You can always mention me in place of a prefix!*"
+        ],
+        "prefix_change": [
+            ":white_check_mark: Changed your server's prefix from `{old_prefix}` to `{new_prefix}`\n*You can always mention me in place of a prefix!*"
+        ]
+    },
+    "config": {
+        "level": {
+            "freeze": [
+                ":snowflake: Levels have been **frozen**!"
+            ],
+            "unfreeze": [
+                ":droplet: Levels have been **unfrozen**!"
+            ],
+            "multi_success": [
+                ":eight_spoked_asterisk: Changed XP multiplier to `{multi}`"
+            ]
+        }
+    },
+    "embeds": {
+        "roles": {
+            "list": {
+                "author": {
+                    "name": "Role Permissions for ${guild}"
+                },
+                "description": "These are the roles that can access mod and admin commands respectively. You can use `${prefix}config roles [mod|admin] [add|remove] <roleID>` to change these.",
+                "fields": [
+                    {
+                        "name": ":crossed_swords: Mod Roles",
+                        "value": "${mod_roles}",
+                        "inline": true
+                    },
+                    {
+                        "name": ":shield: Admin Roles",
+                        "value": "${admin_roles}",
+                        "inline": true
+                    }
+                ]
+            }
+        }
+    }
+}

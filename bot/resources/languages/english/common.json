@@ -1,0 +1,66 @@
+{
+    "error": {
+        "command_error": [
+            "An error has occured whilst running this command. Try the command again, or wait until the issue has been fixed."
+        ],
+        "permission_error": [
+            ":no_entry_sign:**Insufficient Permissions**\n*You are missing the required permissions for this command.*"
+        ],
+        "missing_permissions": [
+            ":x: Insuficent Permissions for {cmd.name}"
+        ],
+        "missing_args": [
+            ":sos: **Missing Argument**\n`{args}`"
+        ],
+        "member_not_found": [
+            ":x: Could not find a user called `{error}`"
+        ]
+    },
+    "embeds": {
+        "debug_test": {
+            "title": "Embed Test",
+            "description": "This is to test whether, do numbers work? 12323213213i210740878304096 json embeds can be used from get_embeds()",
+            "url": "https://discordapp.com",
+            "color": 15442896,
+            "footer": {
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png",
+                "text": "footer text"
+            },
+            "thumbnail": {
+                "url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "image": {
+                "url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "author": {
+                "name": "author name",
+                "url": "https://discordapp.com",
+                "icon_url": "https://cdn.discordapp.com/embed/avatars/0.png"
+            },
+            "fields": [
+                {
+                    "name": "🤔",
+                    "value": "some of these properties have certain limits..."
+                },
+                {
+                    "name": "😱",
+                    "value": "try exceeding some of them!"
+                },
+                {
+                    "name": "🙄",
+                    "value": "an informative error should show up, and this view will remain as-is until all issues are fixed"
+                },
+                {
+                    "name": "<:thonkang:219069250692841473>",
+                    "value": "these last two",
+                    "inline": true
+                },
+                {
+                    "name": "<:thonkang:219069250692841473>",
+                    "value": "are inline fields",
+                    "inline": true
+                }
+            ]
+        }
+    }
+}

@@ -1,2 +1,0 @@
-exchange||Converts Currency ($exchange {amount} {from} {to}). Defaults to USD =} GBP if none specified
-exchange_list||Shows all available exchange currencies
