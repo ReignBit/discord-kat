@@ -36,10 +36,10 @@ jobs:
       - uses: actions/cache@v2
         id: cache
         with:
-        path: ~/.cache/pip
-        key: ${{ matrix.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ matrix.os }}-pip-
+          path: ~/.cache/pip
+          key: ${{ matrix.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ matrix.os }}-pip-
 
       - name: Setup Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
