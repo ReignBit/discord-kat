@@ -1,0 +1,11 @@
+{
+    "command": {
+        "session": {
+            "cancel": ["The announcement has been canceled."],
+            "invalid": ["`${date}` is in an invalid format. `dd/mm/yy` is the accepted format.`"],
+            "already": ["A session announcement has already been scheduled. To start a new one, you must first cancel the existing session.\n`$session cancel`"],
+            "blank": ["You have not specified a date and/or time. `$session <date DD/MM/YY> <time HH:MM UTC>`"],
+            "invalid_time": ["`${time}` is an invalid format. HH:MM is the accepted format."]
+        }
+    }
+}
