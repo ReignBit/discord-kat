@@ -19,7 +19,7 @@
     },
     "command": {
         "kat_load": [
-            "Loaded cog `{cog_name}` successfully!\nCommand List:\n`{cmds}`"
+            "Loaded cog(s) successfully!\nCommand List:\n`{cmds}`"
         ],
         "kat_unload": [
             "I've unloaded `{cog_name}`."

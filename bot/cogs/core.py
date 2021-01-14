@@ -1,15 +1,8 @@
-import hashlib
-import asyncio
 import time
 import os
 import sys
 import traceback
-import requests
-import json
-import inspect
-import re
 
-import psutil
 import discord
 from discord.ext import commands
 
@@ -19,18 +12,18 @@ import bot.utils.metrics as metrics
 import bot.utils.permissions as perms
 
 
-#TODO: This definitely needs chopping up and re-writing
+# TODO: This definitely needs chopping up and re-writing
 class Core(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
         self.hidden = True
-        ## Checksum Generation
+        # Checksum Generation
         self.checksums = {}
         self.checksum_generation()
 
-        self.bot.remove_command('help')
+        self.bot.remove_command("help")
 
-        ## self.output used for $kat exec. Need a better way to do this.
+        # self.output used for $kat exec. Need a better way to do this.
         self.output = None
 
     def collect_metrics(self):
@@ -41,34 +34,45 @@ class Core(KatCog):
             "Mem Usage": metrics.get_sys_mem_usage(),
             "Kat Mem Usage": metrics.get_proc_mem_usage(),
             "Loaded Cogs": ", ".join(self.bot.cogs.keys()),
-            "Last exec_output": self.output
+            "Last exec_output": self.output,
         }
 
     def checksum_generation(self):
         self.log.info("Generating checksums...")
-        self.checksums = metrics.generate_checksums(self.settings['ensure_file_integrity'])
+        self.checksums = metrics.generate_checksums(
+            self.settings["ensure_file_integrity"]
+        )
         self.checksum_checks = 10
         self.modified = 0
         self.log.info("Generated checksums for core files.")
 
     @commands.Cog.listener()
     async def on_kat_minute_event(self):
-        checksums_now = metrics.generate_checksums(self.settings['ensure_file_integrity'])
+        checksums_now = metrics.generate_checksums(
+            self.settings["ensure_file_integrity"]
+        )
         if checksums_now != self.checksums:
-            self.log.warning("CHECKSUM CHECK FAILED FOR AT LEAST 1 PROTECTED FILE [{}/{}]".format(10 - self.checksum_checks, 10))
+            self.log.warning(
+                "CHECKSUM CHECK FAILED FOR AT LEAST 1 PROTECTED FILE [{}/{}]".format(
+                    10 - self.checksum_checks, 10
+                )
+            )
             self.modified = 1
             self.bot.is_restart_scheduled = 1
 
-        if self.modified and self.bot.is_restart_scheduled and not self.bot.maintenance_mode:
+        if (
+            self.modified
+            and self.bot.is_restart_scheduled
+            and not self.bot.maintenance_mode
+        ):
             game = discord.Game("Restart scheduled")
             await self.bot.change_presence(status=discord.Status.idle, activity=game)
 
             self.checksum_checks -= 1
             if self.checksum_checks <= 0:
                 if not self.bot.is_launched_through_orwell:
-                    os.startfile('start_kat.bat')
+                    os.startfile("start_kat.bat")
                 await self.bot.logout()
-
 
     @commands.Cog.listener()
     async def on_kat_five_minute_event(self):
@@ -81,16 +85,24 @@ class Core(KatCog):
             await self.bot.change_presence(status=discord.Status.online, activity=game)
 
         if self.bot.maintenance_mode:
-            await self.bot.change_presence(status=discord.Status.idle, activity=discord.Game(self.get_response('core.generic.kat_restart_scheduled')))
+            await self.bot.change_presence(
+                status=discord.Status.idle,
+                activity=discord.Game(
+                    self.get_response("core.generic.kat_restart_scheduled")
+                ),
+            )
 
-
-    #### Commands
-    @commands.command(aliases=['?'])
+    # Commands
+    @commands.command(aliases=["?"])
     async def help(self, ctx):
         """Shows a link for this page"""
-        embed = discord.Embed(title="How to use Kat", colour=discord.Colour(0xe08a04), description=self.get_response("core.command.help", prefix=ctx.prefix) + self.get_response("core.command.help_link", prefix=ctx.prefix))
+        embed = discord.Embed(
+            title="How to use Kat",
+            colour=discord.Colour(0xE08A04),
+            description=self.get_response("core.command.help", prefix=ctx.prefix)
+            + self.get_response("core.command.help_link", prefix=ctx.prefix),
+        )
         await ctx.send(embed=embed)
-
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -114,10 +126,13 @@ class Core(KatCog):
     @kat.command(hidden=True)
     @commands.is_owner()
     async def announce(self, ctx, *announcement):
-        await ctx.send("CAUTION. Will message EVERY guild owner the following: \n {} \n Are you sure (Y/N)".format(announcement))
-        msg = await self.bot.wait_for('message', check=self.check)
+        await ctx.send(
+            "CAUTION. Will message EVERY guild owner the following:"
+            "\n {} \n Are you sure (Y/N)".format(announcement)
+        )
+        msg = await self.bot.wait_for("message", check=self.check)
 
-        if msg.content.lower().startswith('y'):
+        if msg.content.lower().startswith("y"):
             msgd_owners = []
             for guild in self.bot.guilds:
                 if guild.owner not in msgd_owners:
@@ -133,21 +148,30 @@ class Core(KatCog):
 
     @kat.command()
     async def status(self, ctx):
-        embed = discord.Embed(title="Kat `{}` Status Report".format(self.bot.version), color=discord.Color.dark_orange())
+        embed = discord.Embed(
+            title="Kat `{}` Status Report".format(self.bot.version),
+            color=discord.Color.dark_orange(),
+        )
 
         timestamp = self.bot.start_time
         now = time.time() - timestamp
-        if  now < 60:
+        if now < 60:
             string = f"`{int(now)}` seconds."
-        elif 60 < now < 3600 :
+        elif 60 < now < 3600:
             string = f"around `{int(now / 60)}` minutes."
         else:
             string = f"around `{int(now / 60 / 60)}` hours."
 
-        embed.description = f"Kat was started at `{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))}`, and has been running for {string}."
+        _time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
+        _s = string
+        embed.description = (
+            f"Kat was started at `{_time}`, and has been running for {_s}."
+        )
         metrics = self.collect_metrics().items()
         for metric, value in metrics:
-            embed.add_field(name=metric, value="```fix\n" + str(value) + "```", inline=False)
+            embed.add_field(
+                name=metric, value="```fix\n" + str(value) + "```", inline=False
+            )
         await ctx.send(embed=embed)
 
     @kat.command(hidden=True)
@@ -170,7 +194,7 @@ class Core(KatCog):
         await ctx.send(self.get_response("core.command.kat_restart"))
         try:
             if not self.bot.is_launched_through_orwell:
-                os.startfile('start_kat.bat')
+                os.startfile("start_kat.bat")
             await self.bot.logout()
         except Exception as err:
             await self.throw_command_error_to_message(ctx, err)
@@ -182,33 +206,44 @@ class Core(KatCog):
         try:
             exec("self.output = " + args)
             embed = discord.Embed(color=discord.Color.green())
-            embed.set_author(name="Execution Succeeded", icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1")
+            embed.set_author(
+                name="Execution Succeeded",
+                icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1",
+            )
             embed.description = "```py\n{}\n```".format(self.output)
             await ctx.send(embed=embed)
 
         except Exception:
             embed = discord.Embed(color=discord.Color.red())
-            embed.set_author(name="Execution Failed", icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
+            embed.set_author(
+                name="Execution Failed",
+                icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
+            )
             embed.description = "```py\n{}\n```".format(traceback.format_exc())
             await ctx.send(embed=embed)
 
-
     @kat.command(hidden=True)
     @commands.is_owner()
-    async def imp (self, ctx, arg):
+    async def imp(self, ctx, arg):
         """Imports a python module for $exec use."""
         try:
             exec("import " + arg)
             _ = None
-            exec("_ = " +arg + ".__version__")
+            exec("_ = " + arg + ".__version__")
             self.output = arg + _
             embed = discord.Embed(color=discord.Color.green())
-            embed.set_author(name="Execution Succeeded", icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1")
+            embed.set_author(
+                name="Execution Succeeded",
+                icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1",
+            )
             embed.description = "```py\n{}\n```".format(self.output)
             await ctx.send(embed=embed)
         except Exception:
             embed = discord.Embed(color=discord.Color.red())
-            embed.set_author(name="Execution Failed", icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
+            embed.set_author(
+                name="Execution Failed",
+                icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
+            )
             embed.description = "```py\n{}\n```".format(traceback.format_exc())
             await ctx.send(embed=embed)
 
@@ -216,13 +251,17 @@ class Core(KatCog):
         """Attempts to load a cog and returns its command list."""
         try:
             # Attempt to load the cog.
-            name, cog = extensions.load_cog(self.bot, cog_name)
+            name, cogs = extensions.load_cog(self.bot, cog_name)
 
             cmds = ""
-            for k, j in zip([c.qualified_name for c in cog.walk_commands()], [c.signature for c in cog.walk_commands()]):
-                cmds += "{} : {}\n".format(k, j)
+            for cog in cogs:
+                for k, j in zip(
+                    [c.qualified_name for c in cog.walk_commands()],
+                    [c.signature for c in cog.walk_commands()],
+                ):
+                    cmds += "{} : {}\n".format(k, j)
 
-            return self.get_response("core.command.kat_load", cmds=cmds, cog_name=cog.qualified_name)
+            return self.get_response("core.command.kat_load", cmds=cmds)
 
         except commands.ExtensionNotFound:
             return self.get_response("core.error.ExtensionNotFound")
@@ -233,7 +272,6 @@ class Core(KatCog):
         except commands.ExtensionFailed:
             return self.get_response("core.error.ExtensionFailed")
 
-
     def unload_cog(self, cog_name):
         try:
             name, _ = extensions.unload_cog(self.bot, cog_name)
@@ -241,8 +279,6 @@ class Core(KatCog):
 
         except commands.ExtensionNotLoaded as err:
             return self.get_response("core.error.ExtensionNotLoaded", err=err)
-
-
 
     @kat.command(hidden=True)
     async def load(self, ctx, cog_name):
@@ -266,8 +302,7 @@ class Core(KatCog):
         except commands.ExtensionError as err:
             await ctx.send(self.get_response("common.error.command_error", err=err))
 
-
-    @kat.command(alias=['presence', 'changegame', 'game'], hidden=True)
+    @kat.command(alias=["presence", "changegame", "game"], hidden=True)
     async def changepresence(self, ctx):
         if self.bot.is_restart_scheduled:
             return
@@ -280,22 +315,35 @@ class Core(KatCog):
         if value:
             self.bot.maintenance_mode = True
             await ctx.send(self.get_response("core.command.kat_maintenance_on"))
-            await self.bot.change_presence(status=discord.Status.idle, activity=discord.Game(self.get_response('core.generic.kat_maintenance_presence')))
+            await self.bot.change_presence(
+                status=discord.Status.idle,
+                activity=discord.Game(
+                    self.get_response("core.generic.kat_maintenance_presence")
+                ),
+            )
         else:
             self.bot.maintenance_mode = False
-            game = discord.Game(self.get_response("core.generic.kat_ready", bot=self.bot))
+            game = discord.Game(
+                self.get_response("core.generic.kat_ready", bot=self.bot)
+            )
             await self.bot.change_presence(status=discord.Status.online, activity=game)
             await ctx.send(self.get_response("core.command.kat_maintenance_off"))
 
     @kat.command(hidden=True)
     async def dump(self, ctx, cog_name):
         cog = self.bot.get_cog(cog_name)
-        _ = ',\n'.join("{}: {}".format(i, str(cog.__dict__[i])[:50]) for i in cog.__dict__ if not i.startswith('__') and not callable(cog.__dict__[i]))
+        _ = ",\n".join(
+            "{}: {}".format(i, str(cog.__dict__[i])[:50])
+            for i in cog.__dict__
+            if not i.startswith("__") and not callable(cog.__dict__[i])
+        )
         embed = discord.Embed()
-        embed.set_author(name="Attribute Dump", icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1")
+        embed.set_author(
+            name="Attribute Dump",
+            icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1",
+        )
         embed.description = "```py\n{}\n```".format(_)
         await ctx.send(embed=embed)
-
 
     @kat.command(hidden=True)
     async def reloadresp(self, ctx):
@@ -306,15 +354,16 @@ class Core(KatCog):
     @kat.command(hidden=True)
     async def eventlist(self, ctx):
         string = "```py\nMAIN\n"
-        for k,v in self.bot.event_manager._events.items():
-                string += "{}: {}\n\n".format(k,v)
+        for k, v in self.bot.event_manager._events.items():
+            string += "{}: {}\n\n".format(k, v)
         for cog in self.bot.cogs:
             if len(self.bot.get_cog(cog).event_manager._events) > 0:
                 string += "{}\n".format(cog)
-                for k,v in self.bot.get_cog(cog).event_manager._events.items():
-                    string += "{}: {}\n\n".format(k,v)
+                for k, v in self.bot.get_cog(cog).event_manager._events.items():
+                    string += "{}: {}\n\n".format(k, v)
         string += "```"
         await ctx.send(string)
+
 
 def setup(bot):
     bot.add_cog(Core(bot))
