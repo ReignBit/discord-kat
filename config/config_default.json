@@ -4,12 +4,11 @@
     "startup_cogs": [
         "core",
         "level",
-        "admin",
+        "misc",
         "fun",
         "exchange",
         "translate",
-        "anonymous",
-        "ttt"
+        "anonymous"
     ],
     "default_prefix": "$",
     "maintenance_mode": 0,
@@ -77,9 +76,6 @@
                 311612862554439692,
                 519611151143665664
             ]
-        },
-        "milsim": {
-            "operation_name": "milsim won't work for public release"
         }
     },
     "EventManager": {
