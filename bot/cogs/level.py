@@ -6,6 +6,7 @@ import MySQLdb._exceptions
 
 from bot.utils.extensions import KatCog
 import bot.utils.permissions as permissions
+from bot.utils.models import KatMember
 
 
 class Level(KatCog):
@@ -30,14 +31,16 @@ class Level(KatCog):
         if self.bot.maintenance_mode:
             self.global_freeze = True
             self.debug_mode = True
-            self.announcement = ":warning: Kat is undergoing Backend Maintenance :warning: \n :snowflake: Global freeze due to maintenance :snowflake:"
+            self.announcement = ":warning: Kat is undergoing Backend Maintenance :warning: \n" \
+                ":snowflake: Global freeze due to maintenance :snowflake:"
 
     @commands.Cog.listener()
     async def on_maintenance_mode(self, value):
         if self.bot.maintenance_mode:
             self.global_freeze = True
             self.log.debug_mode = True
-            self.announcement = ":warning: Kat is undergoing Backend Maintenance :warning: \n :snowflake: Global freeze due to maintenance :snowflake:"
+            self.announcement = ":warning: Kat is undergoing Backend Maintenance :warning: \n" \
+                ":snowflake: Global freeze due to maintenance :snowflake:"
         else:
             self.global_freeze = False
             self.log.debug_mode = True
@@ -161,7 +164,8 @@ class Level(KatCog):
                 try:
                     username = ctx.guild.get_member(leader.user_id).display_name
                 except AttributeError:
-                    # Here we delete the user if we can't see them. However im unsure how this would work with +100 servers.
+                    # Here we delete the user if we can't see them.
+                    # However im unsure how this would work with +100 servers.
                     self.log.info(
                         "Deleting user_id {} from the DB.".format(leader.user_id)
                     )
