@@ -75,15 +75,13 @@ class Milsim(KatCog):
                 colour=discord.Colour(0xF1C40F),
                 description="There will be a Milsim session hosted at the following time:\n\n "
                 f"{string} ***UK TIME***\n\nIn your timezone, this is:\n"
-                "https://www.google.com/search?q={time} "
+                f"https://www.google.com/search?q={time} "
                 "\n\nPlease ensure you have the latest mod preset installed and updated.\n Check "
-                "[#modpack-support]"
+                "[#modpack-support]" +
                 "(https://discord.com/channels/485578455795367967/528565872755736586) for help."
                 "\n\nIf you are able to attend, please react with   "
                 "<:white_check_mark:613273290374643723>"
-                "\nIf you are unable to attend, please react with <:x:615775632139223061>".format(
-                    string, time
-                ),
+                "\nIf you are unable to attend, please react with <:x:615775632139223061>",
             )
             embed.set_author(name="Milsim Session Announcement")
 
