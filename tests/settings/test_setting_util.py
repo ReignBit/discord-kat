@@ -9,6 +9,8 @@ Tests the following scenarios:
     - Get invalid item
     - Get item from fallback
 """
+import os
+
 
 from bot.utils.setting_loader import Settings
 
@@ -43,3 +45,10 @@ def test_get_item_not_exist(setup: Settings):
 
 def test_bool_cast_from_item(setup: Settings):
     assert type(bool(setup.get("bool_test"))) is bool
+
+
+def test_create_from_file(setup):
+    print(os.getcwd())
+    test = Settings.from_file("tests/settings/test.json", "tests/settings/test_fallback.json")
+    print(test._settings_dict)
+    assert test.get("test_key") == "test_value"

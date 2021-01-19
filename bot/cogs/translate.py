@@ -1,11 +1,9 @@
-import json
 import html
 import re
 
 from discord.ext import commands
 import discord
 from translate import Translator
-import requests
 
 from bot.utils.extensions import KatCog, read_resource
 
@@ -29,7 +27,6 @@ class Translate(KatCog):
         # self.log.debug(type(translation))
         return html.unescape(translation)
 
-
     @commands.Cog.listener()
     async def on_message(self, message):
         """If Hiragana or Katakana detected, attempt to translate"""
@@ -51,7 +48,7 @@ class Translate(KatCog):
         if ":" in lang:
             from_lang = lang.split(':')[0]
             to_lang = lang.split(':')[1]
-            if len(to_lang) is not 2:
+            if len(to_lang) != 2:
                 to_lang = 'en'
         else:
             from_lang = "ja"

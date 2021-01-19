@@ -40,7 +40,7 @@ class Core(KatCog):
     def checksum_generation(self):
         self.log.info("Generating checksums...")
         self.checksums = metrics.generate_checksums(
-            self.settings["ensure_file_integrity"]
+            self.settings.get("ensure_file_integrity")
         )
         self.checksum_checks = 10
         self.modified = 0
@@ -49,7 +49,7 @@ class Core(KatCog):
     @commands.Cog.listener()
     async def on_kat_minute_event(self):
         checksums_now = metrics.generate_checksums(
-            self.settings["ensure_file_integrity"]
+            self.settings.get("ensure_file_integrity")
         )
         if checksums_now != self.checksums:
             self.log.warning(

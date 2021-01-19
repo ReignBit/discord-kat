@@ -32,7 +32,7 @@ class Fun(KatCog):
         self.log.info("Refreshing gif cache for 1 hour...")
 
         r = requests.get(
-            "https://api.tenor.com/v1/search?q=megumin&key={}&limit=8&anon_id=312ced313baf42079d1588df7e032c69".format(self.settings['gify_api_key']))
+            "https://api.tenor.com/v1/search?q=megumin&key={}&limit=8&anon_id=312ced313baf42079d1588df7e032c69".format(self.settings.get('gify_api_key')))
         if r.status_code == 200:
             # load the GIFs using the urls for the smaller GIF sizes
             return json.loads(r.content)
@@ -41,7 +41,7 @@ class Fun(KatCog):
     async def _get_gif(self, search_query):
         """ Sends API call to tenor, for search_query. Returns a random gif from result."""
         r = requests.get(
-        "https://api.tenor.com/v1/search?q={}&key={}&limit=20&anon_id=312ced313baf42079d1588df7e032c69".format(search_query,self.settings['gify_api_key']))
+        "https://api.tenor.com/v1/search?q={}&key={}&limit=20&anon_id=312ced313baf42079d1588df7e032c69".format(search_query,self.settings.get('gify_api_key')))
         if r.status_code == 200:
             # load the GIFs using the urls for the smaller GIF sizes
             raw = json.loads(r.content)['results']

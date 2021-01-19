@@ -22,6 +22,7 @@ class Settings:
 
     @classmethod
     def from_file(cls, config_file, fallback_file):
+        cls = cls()
         with open(config_file, "r") as f:
             try:
                 cls._settings_dict = json.load(f)
@@ -39,6 +40,24 @@ class Settings:
                     "is formatted correctly."
                 )
         return cls
+
+    def from_key(self, key):
+        """Returns a new class from an existing instance with data from a key."""
+        try:
+            settings_ = self.get(key)
+        except KeyError:
+            settings_ = {}
+        fallback_ = ""
+
+        _result = None
+        try:
+            for x in key.split("."):
+                _result = self._fallback_dict[x]
+        except KeyError:
+            _result = {}
+        fallback_ = _result
+
+        return Settings(settings_, fallback_)
 
     def set(self, key, value):
         self._nested_set(self._settings_dict, key.split('.'), value)

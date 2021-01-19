@@ -42,11 +42,11 @@ class Kat(commands.Bot):
 
         self.code_line_count = calculate_lines()
         self.settings = Settings.from_file(
-            "bot/config/config.json", "bot/config/config_default.json"
+            "config/config.json", "config/config_default.json"
         )
 
         self.is_launched_through_orwell = False
-        self._is_maintenance_mode = bool(self.settings["maintenance_mode"])
+        self._is_maintenance_mode = bool(self.settings.get("maintenance_mode"))
 
         self.sql = database.SqlEngine(self)
         self.sql.create_sql_session()
@@ -57,7 +57,7 @@ class Kat(commands.Bot):
         self._current_presence = None
 
         self.guild_count = -1
-        self.default_prefix = self.settings["default_prefix"]
+        self.default_prefix = self.settings.get("default_prefix")
         self.event_manager = None
 
         # super call to commands.Bot
@@ -66,7 +66,7 @@ class Kat(commands.Bot):
     @property
     def branch(self):
         """Returns which production environment we are running"""
-        return self.settings["branch"]
+        return self.settings.get("branch")
 
     @property
     def version(self):
@@ -206,7 +206,7 @@ class Kat(commands.Bot):
             self.log.debug("Not first boot. Skipping event creation.")
             return
 
-        _event_map = self.settings["EventManager"]["events"]
+        _event_map = self.settings.get("EventManager.events")
         self.log.info("Initializing events...")
         self.event_manager = events.EventManager(self)
 
@@ -217,7 +217,7 @@ class Kat(commands.Bot):
         """Callable, returns the prefix for the message's guild."""
         prefix = self.sql.ensure_exists(
             "KatGuild", guild_id=message.guild.id
-        ).ensure_setting("settings.prefix", self.settings["default_prefix"])
+        ).ensure_setting("settings.prefix", self.settings.get("default_prefix"))
         return commands.when_mentioned_or(*prefix)(bot, message)
 
     def load_settings(self):
@@ -230,10 +230,9 @@ class Kat(commands.Bot):
         """Goes through all cog names in settings.startup_cogs and attempts to load them."""
         if self.is_first_boot:
             self.log.info("Loading startup cogs...")
-            for cog in self.settings["startup_cogs"]:
+            for cog in self.settings.get("startup_cogs"):
                 try:
                     n, c = load_cog(self, cog)
-                    self.loaded_cogs[n] = c
                 except TypeError as e:
                     self.log.exception("Failed to load cog: {}".format(cog), exc_info=e)
             self.log.info("Loaded startup cogs.")
@@ -246,7 +245,7 @@ class Kat(commands.Bot):
         while _tries != 10 and not _disconnected:
             self.log.info("Attempting to connect to Discord...")
             try:
-                self.loop.run_until_complete(self.login(self.settings["token"]))
+                self.loop.run_until_complete(self.login(self.settings.get("token")))
                 self.loop.run_until_complete(self.connect(reconnect=False))
                 _disconnected = True
             except (discord.HTTPException, socket.gaierror, Exception) as err:
