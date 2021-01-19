@@ -17,6 +17,7 @@ class Configurator(KatCog):
 
     def _config_embed_builder(self, ctx, command_path, fields, cog_name="Kat"):
         embed = discord.Embed()
+        embed.color = 3092790
         embed.set_author(name="{} Config for {}".format(
             cog_name, ctx.guild.name))
         embed.set_footer(text="Use `{}` to view and change settings.".format(
