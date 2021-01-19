@@ -3,14 +3,20 @@ import logging
 
 
 class Settings:
-    """A data class that looks for a value in dict1 before checking dict2."""
+    """A data class that looks for a value in dict1 before checking dict2.
+
+        `get(key)`; returns value from `_settings_dict`,
+            attempts to retrieve key from `_fallback_dict` if does not exist in `_settings_dict`.
+
+        `set(key, value)`; sets value to key in `_settings_dict`.
+    """
 
     def __init__(self, config_data: dict = None, fallback_data: dict = None):
         self._settings_dict = {}
         self._fallback_dict = {}
 
         if config_data:
-            self._setting_dict = config_data
+            self._settings_dict = config_data
         if fallback_data:
             self._fallback_dict = fallback_data
 
@@ -18,9 +24,9 @@ class Settings:
     def from_file(cls, config_file, fallback_file):
         with open(config_file, "r") as f:
             try:
-                cls._setting_dict = json.load(f)
+                cls._settings_dict = json.load(f)
             except json.DecodeError:
-                cls._setting_dict = {}
+                cls._settings_dict = {}
 
         with open(fallback_file, "r") as f:
             try:
@@ -34,16 +40,23 @@ class Settings:
                 )
         return cls
 
-    def __getitem__(self, key):
-        item = self._settings_dict.get(key, None)
-        if item is None:
-            fallback_item = self._fallback_dict.get(key, None)
-            if fallback_item is None:
-                return None
-            return fallback_item
-        return item
+    def set(self, key, value):
+        self._nested_set(self._settings_dict, key.split('.'), value)
 
-    def __setitem__(self, key, value):
-        # We shouldn't really be setting values to the config,
-        # But the capability is here just in case.
-        self._settings_dict[key] = value
+    def get(self, setting_key):
+        _path = setting_key.split(".")
+        _result = self._settings_dict
+        for x in _path:
+            _result = _result.get(x, {})
+        if _result == {}:
+            _result = self._fallback_dict
+            for x in _path:
+                _result = _result.get(x, {})
+                if _result == {}:
+                    return None
+        return _result
+
+    def _nested_set(self, dic, keys, value):
+        for key in keys[:-1]:
+            dic = dic.setdefault(key, {})
+        dic[keys[-1]] = value
