@@ -6,10 +6,10 @@ import discord
 
 from bot.utils.extensions import KatCog
 
+
 class FailedToFindServiceException(Exception):
     pass
 
-#TODO: Might be due for a re-write
 
 class Orwell(KatCog):
     def __init__(self, bot):
@@ -20,8 +20,12 @@ class Orwell(KatCog):
         self.voters = 0
         self.total_voters = 3
 
+        self.user = self.settings.get("user")
+        self.paswd = self.settings.get("pass")
+        self.host = self.settings.get("apihost")
+
     def is_role(self, ctx):
-        roles = self.settings['allowed_roles']
+        roles = self.settings.get("allowed_roles")
         # Check if we are the bot owner
         if ctx.author.id == self.bot.app_info.owner.id:
             return True
@@ -42,26 +46,42 @@ class Orwell(KatCog):
         return False
 
     def get_service(self, service_id=None):
+
         if service_id == None:
-            result = requests.request("GET", f"{self.settings['apihost']}/services", auth=requests.auth.HTTPBasicAuth(self.settings['user'], self.settings['pass']))
+            result = requests.request(
+                "GET",
+                f"{self.host}/services",
+                auth=requests.auth.HTTPBasicAuth(self.user, self.paswd),
+            )
         else:
-            result = requests.request("GET", f"{self.settings['apihost']}/services/{id}", auth=requests.auth.HTTPBasicAuth(self.settings['user'], self.settings['pass']))
+            result = requests.request(
+                "GET",
+                f"{self.host}/services/{id}",
+                auth=requests.auth.HTTPBasicAuth(self.user, self.paswd),
+            )
         self.log.debug(result.status_code)
         self.log.debug(result.json())
         if result.status_code == 404:
             raise FailedToFindServiceException()
 
-
         services = result.json()
-        self.log.debug("Recieved ARES API with message: " + services['message'])
-        return services['data']
+        self.log.debug("Recieved ARES API with message: " + services["message"])
+        return services["data"]
 
     def start_service(self, service_id):
-        result = requests.request("POST", f"{self.settings['apihost']}/services/{service_id}/start", auth=requests.auth.HTTPBasicAuth(self.settings['user'], self.settings['pass']))
+        result = requests.request(
+            "POST",
+            f"{self.host}/services/{service_id}/start",
+            auth=requests.auth.HTTPBasicAuth(self.user, self.paswd),
+        )
         return result
 
     def stop_service(self, service_id):
-        result = requests.request("POST", f"{self.settings['apihost']}/services/{service_id}/stop", auth=requests.auth.HTTPBasicAuth(self.settings['user'], self.settings['pass']))
+        result = requests.request(
+            "POST",
+            f"{self.host}/services/{service_id}/stop",
+            auth=requests.auth.HTTPBasicAuth(self.user, self.paswd),
+        )
         return result
 
     @commands.group()
@@ -71,14 +91,25 @@ class Orwell(KatCog):
             return
         services = self.get_service()
 
-        embed = discord.Embed(colour=discord.Colour(0x2a8550), description="Current status of all Reign services.\n\n")
+        embed = discord.Embed(
+            colour=discord.Colour(0x2A8550),
+            description="Current status of all Reign services.\n\n",
+        )
         embed.set_author(name="Reign Service List", icon_url=ctx.guild.icon_url)
         embed.set_footer(text="ARES Service Manager")
         for service in services:
-            if service['status']:
-                embed.add_field(name="**" + service['name'] + "**", value="🟩 " + service['service_id'], inline=False)
+            if service["status"]:
+                embed.add_field(
+                    name="**" + service["name"] + "**",
+                    value="🟩 " + service["service_id"],
+                    inline=False,
+                )
             else:
-                embed.add_field(name="**" + service['name'] + "**", value="🟥 " + service['service_id'], inline=False)
+                embed.add_field(
+                    name="**" + service["name"] + "**",
+                    value="🟥 " + service["service_id"],
+                    inline=False,
+                )
         await ctx.send(embed=embed)
 
     # @servers.command(hidden=True)
@@ -89,19 +120,23 @@ class Orwell(KatCog):
     async def start(self, ctx, id):
         """Tries to start the service with given id"""
         if not self.is_role(ctx):
-            #await self.start_vote(ctx, id)
+            # await self.start_vote(ctx, id)
             self.log.debug("Not role")
             return
 
-        embed = discord.Embed(colour=discord.Colour(0x2a8550))
+        embed = discord.Embed(colour=discord.Colour(0x2A8550))
         embed.set_author(name="Reign Service List", icon_url=ctx.guild.icon_url)
         result = self.start_service(id)
         mention = None
-        data = result.json()['data']
+        data = result.json()["data"]
 
         if result.status_code == 200:
             embed.description = "Service started successfully."
-            embed.add_field(name="**" + data['name'] + "**", value="🟩 " + data['service_id'], inline=False)
+            embed.add_field(
+                name="**" + data["name"] + "**",
+                value="🟩 " + data["service_id"],
+                inline=False,
+            )
 
         elif result.status_code == 413:
             embed.description = "Not enough Free RAM to start this service.\n\nTry stopping some services first."
@@ -112,22 +147,25 @@ class Orwell(KatCog):
 
         await ctx.send(mention, embed=embed)
 
-
     @servers.command(hidden=True)
     async def stop(self, ctx, id):
         """Tries to stop the service with given id"""
         if not self.is_role(ctx):
             return
 
-        embed = discord.Embed(colour=discord.Colour(0x2a8550))
+        embed = discord.Embed(colour=discord.Colour(0x2A8550))
         embed.set_author(name="Reign Service List", icon_url=ctx.guild.icon_url)
         result = self.stop_service(id)
         mention = None
         if result.status_code == 200:
-            data = result.json()['data']
+            data = result.json()["data"]
 
             embed.description = "Service stopped successfully."
-            embed.add_field(name="**" + data['name'] + "**", value="🟥 " + data['service_id'], inline=False)
+            embed.add_field(
+                name="**" + data["name"] + "**",
+                value="🟥 " + data["service_id"],
+                inline=False,
+            )
         else:
             mention = self.bot.app_info.owner.mention
             embed.description = "Service failed to stop."
@@ -138,14 +176,17 @@ class Orwell(KatCog):
     async def status(self, ctx, id):
         try:
             services = self.get_service(id)
-            embed = discord.Embed(colour=discord.Colour(0x2a8550))
+            embed = discord.Embed(colour=discord.Colour(0x2A8550))
             embed.set_author(name=f"{id} Status", icon_url=ctx.guild.icon_url)
 
             embed.description = f"```json\n{services}\n```"
 
         except FailedToFindServiceException:
-            embed = discord.Embed(colour=discord.Colour(0x2a8550))
-            embed.set_author(name=f"Failed to find service", icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
+            embed = discord.Embed(colour=discord.Colour(0x2A8550))
+            embed.set_author(
+                name=f"Failed to find service",
+                icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
+            )
             embed.description = f"No service with the id of `{id}` could be found."
 
         await ctx.send(embed=embed)
@@ -156,25 +197,46 @@ class Orwell(KatCog):
         try:
             self.get_service(id)
             payload = json.loads(" ".join(payload).replace("'", '"'))
-            result = requests.request("PATCH", f"{self.settings['apihost']}/services/{id}", json=payload,  auth=requests.auth.HTTPBasicAuth(self.settings['user'], self.settings['pass']))
+            result = requests.request(
+                "PATCH",
+                f"{self.host}/services/{id}",
+                json=payload,
+                auth=requests.auth.HTTPBasicAuth(self.user, self.paswd),
+            )
 
             if result.status_code == 200:
                 embed = discord.Embed(color=discord.Color.green())
-                embed.set_author(name="Service Edited Successfully", icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1")
+                embed.set_author(
+                    name="Service Edited Successfully",
+                    icon_url="https://cdn.discordapp.com/emojis/669531367511425024.png?v=1",
+                )
                 embed.description = "```py\n{}\n```".format(result.json())
             else:
                 embed = discord.Embed(colour=discord.Colour.red())
-                embed.set_author(name=f"Something went wrong (ERROR {result.status_code})", icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
-                embed.description = f"Something went wrong\n\n```py\n{result.json()}\n```"
+                embed.set_author(
+                    name=f"Something went wrong (ERROR {result.status_code})",
+                    icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
+                )
+                embed.description = (
+                    f"Something went wrong\n\n```py\n{result.json()}\n```"
+                )
 
         except json.JSONDecodeError:
             embed = discord.Embed(colour=discord.Colour.red())
-            embed.set_author(name=f"Invalid JSON Payload", icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
-            embed.description = "The payload you tried to upload is formatted incorrectly."
+            embed.set_author(
+                name=f"Invalid JSON Payload",
+                icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
+            )
+            embed.description = (
+                "The payload you tried to upload is formatted incorrectly."
+            )
 
         except FailedToFindServiceException:
             embed = discord.Embed(colour=discord.Colour.red())
-            embed.set_author(name=f"Failed to find service", icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
+            embed.set_author(
+                name=f"Failed to find service",
+                icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
+            )
             embed.description = f"No service with the id of `{id}` could be found."
 
         finally:

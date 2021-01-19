@@ -13,19 +13,17 @@ class Dyndns(KatCog):
         super().__init__(bot)
         self.hidden = True
 
-        self.url = f"https://api.godaddy.com/v1/domains/{self.settings['domain']}/records/A/@"
+        self.url = f"https://api.godaddy.com/v1/domains/{self.settings.get('domain')}/records/A/@"
         self.session = requests.Session()
 
         self.session.headers.update(
-            {'Authorization': 'sso-key ' + self.settings["auth_key"]})
-
+            {'Authorization': 'sso-key ' + self.settings.get("auth_key")})
 
     def update_ips(self):
         ip = requests.get('https://api.ipify.org').text
         dad_ip = self.session.get(self.url).json()[0]['data']
 
         return ip, dad_ip
-
 
     @commands.Cog.listener()
     async def on_kat_hour_event(self):
