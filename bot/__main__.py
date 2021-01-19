@@ -1,31 +1,25 @@
-#!/venv/Scripts python
-# PYTHON BUILTINS
 import argparse
 import socket
 import os
 import time
 import json
 import sys
-import traceback
-from datetime import datetime
-import asyncio
-from contextlib import contextmanager
 from pathlib import Path
 import subprocess
 
 import discord
 from discord.ext import commands
-import sqlalchemy
 
-from bot.utils.extensions import compress_file, load_cog, unload_cog
+from bot.utils.extensions import compress_file, load_cog, calculate_lines
 import bot.utils.logger as logger
 import bot.utils.events as events
-from bot.utils.models import sessionmaker, KatGuild, KatUser, KatMember
 import bot.utils.database as database
+from bot.utils.setting_loader import Settings
 
 # TODO: Change this when we change to a Docker solution.
-__version__ = str(subprocess.getoutput(
-    'git describe --dirty --tags --dirty --always').split('\n')[0])
+__version__ = str(
+    subprocess.getoutput("git describe --dirty --tags --dirty --always").split("\n")[0]
+)
 
 if os.name == "nt":
     os.system("cls")
@@ -46,31 +40,24 @@ class Kat(commands.Bot):
         # boot start time, used to calculate time taken to boot.
         self.start_time = time.time()
 
-        self.code_line_count = self.calculate_lines()   # code line calculation
-        self.settings = self.load_settings()  # settings from resources.settings.py
+        self.code_line_count = calculate_lines()
+        self.settings = Settings.from_file(
+            "bot/config/config.json", "bot/config/config_default.json"
+        )
 
-        # Set to True through command line, if set to True will not restart self, since orwell manages that.
         self.is_launched_through_orwell = False
-        # Should we be in Maintenance mode?
-        self._is_maintenance_mode = bool(self.settings['maintenance_mode'])
+        self._is_maintenance_mode = bool(self.settings["maintenance_mode"])
 
-        # SQL Obj for interaction with DB. Engine gets created in pre-init
         self.sql = database.SqlEngine(self)
         self.sql.create_sql_session()
 
-        # Instance Variables
-        self.app_info = None    # gets populated by self.application_info() in on_ready()
-        self.loaded_cogs = {}   # populated when we load cogs.
-        # flag used to check whether to load cogs. (is this the first boot or reconnect)
+        self.app_info = None  # gets populated by self.application_info() in on_ready()
         self.is_first_boot = 1
-        # set to 1 when we are going to restart Kat. Mostly used to stop presence update
         self.is_restart_scheduled = 0
-        # Current 'is playing...' message. Populated whenever we change presence
         self._current_presence = None
-        self.guild_count = -1  # populated in on_ready()
-        # If a guild does not have a custom prefix data, then their guild prefix will be set to this.
-        self.default_prefix = self.settings['default_prefix']
-        # Instance of bot.utils.events.EventManager. Populated on_ready
+
+        self.guild_count = -1
+        self.default_prefix = self.settings["default_prefix"]
         self.event_manager = None
 
         # super call to commands.Bot
@@ -79,18 +66,12 @@ class Kat(commands.Bot):
     @property
     def branch(self):
         """Returns which production environment we are running"""
-        return self.settings['branch']
+        return self.settings["branch"]
 
     @property
     def version(self):
         """Return Kats current version"""
         return __version__
-
-    @property
-    def prefix(self):
-        """Obsolete. Return default prefix."""
-        raise DeprecationWarning(
-            "Bot-wide prefixes are deprecated, instead fetch prefixes from Guild settings!")
 
     @property
     def log(self):
@@ -121,10 +102,10 @@ class Kat(commands.Bot):
 
     def _clean_logs(self):
         """ Archives the last latest.log and gets it ready for this instance's logging"""
-        if 'logs' not in os.listdir('.'):
-            os.mkdir('logs')
+        if "logs" not in os.listdir("."):
+            os.mkdir("logs")
 
-        if 'latest.log' in os.listdir('logs'):
+        if "latest.log" in os.listdir("logs"):
             date = ""
             first_line = ""
             # open the latest log file
@@ -135,8 +116,8 @@ class Kat(commands.Bot):
             date = date.replace(":", "-").replace(" ", "_")
 
             # TODO: Tidy this up, maybe change where we load the config to avoid loading config twice
-            _settings = json.load(open('config/config.json', "r"))
-            if _settings['logger']['compress_logs']:
+            _settings = json.load(open("config/config.json", "r"))
+            if _settings["logger"]["compress_logs"]:
                 # take the contents of latest.log and compress them to a new gzip file.
                 with open("logs/{}.log.gz".format(date), "wb") as f:
                     f.write(compress_file("logs/latest.log"))
@@ -145,13 +126,12 @@ class Kat(commands.Bot):
 
             del _settings
             # delete latest.log ready for new log
-            os.remove(f'logs/latest.log')
+            os.remove("logs/latest.log")
 
-            # remove archived logs that are less than 1024 bytes. These are usually created enmass when the bot fails to start
-            # due to syntax errors several times in a row, and are very annoying.
-            for f in os.listdir('logs'):
-                if f.endswith('.gz') and Path("logs/" + f).stat().st_size < 1024:
-                    os.remove('logs/'+f)
+            # remove archived logs that are less than 1024 bytes.
+            for f in os.listdir("logs"):
+                if f.endswith(".gz") and Path("logs/" + f).stat().st_size < 1024:
+                    os.remove("logs/" + f)
 
     async def on_error(self, event, *args, **kwargs):
         """Event called when an event raises an exception"""
@@ -170,24 +150,25 @@ class Kat(commands.Bot):
             return
 
         # Get the original exception if not already.
-        error = getattr(exception, 'original', exception)
+        error = getattr(exception, "original", exception)
 
         # Any exceptions we want to ignore.
         ignored_exc = (commands.CommandNotFound,)
         if isinstance(error, ignored_exc):
             return
 
-        self.log.error("Ignoring exception from command {} \n{}".format(
-            ctx.command.name, error))
+        self.log.error(
+            "Ignoring exception from command {} \n{}".format(ctx.command.name, error)
+        )
 
     async def on_connect(self):
         """Call when connected to Discord API"""
         self.log.info("Established connection to Discord API")
 
     async def on_ready(self):
-        """ Called when Kat is loaded and connected to Discord API. Used to load cogs, and set up instance stuff
-            This can be called multiple times when we lose connection to DAPI and other things.
-            Don't use this for only when Kat has booted. Ensure you use `first_time_boot` flag
+        """Called when Kat is loaded and connected to Discord API.
+        This can be called multiple times when we lose connection to DAPI and other things.
+        Don't use this for only when Kat has booted. Ensure you use `first_time_boot` flag
         """
         # PRE-INIT
         self.log.info("Pre-Initialization")
@@ -201,10 +182,14 @@ class Kat(commands.Bot):
         self.load_start_cogs()
 
         # POST-INIT
-        self.log.info(" =========== Kat initialized. Took {} seconds =========== ".format(
-            format(time.time() - self.start_time, '.2f')))
         self.log.info(
-            "- Can see {} users, {} guilds ".format(len(self.users), len(self.guilds)))
+            " =========== Kat initialized. Took {} seconds =========== ".format(
+                format(time.time() - self.start_time, ".2f")
+            )
+        )
+        self.log.info(
+            "- Can see {} users, {} guilds ".format(len(self.users), len(self.guilds))
+        )
 
         self.log.info("- Using the following intents:")
         for k, v in self.intents:
@@ -221,7 +206,7 @@ class Kat(commands.Bot):
             self.log.debug("Not first boot. Skipping event creation.")
             return
 
-        _event_map = self.settings['EventManager']['events']
+        _event_map = self.settings["EventManager"]["events"]
         self.log.info("Initializing events...")
         self.event_manager = events.EventManager(self)
 
@@ -231,12 +216,13 @@ class Kat(commands.Bot):
     def get_custom_prefix(self, bot, message):
         """Callable, returns the prefix for the message's guild."""
         prefix = self.sql.ensure_exists(
-            "KatGuild", guild_id=message.guild.id).ensure_setting("settings.prefix", self.settings['default_prefix'])
+            "KatGuild", guild_id=message.guild.id
+        ).ensure_setting("settings.prefix", self.settings["default_prefix"])
         return commands.when_mentioned_or(*prefix)(bot, message)
 
     def load_settings(self):
         """Loads into memory config/config.json"""
-        with open('config/config.json', 'r') as f:
+        with open("config/config.json", "r") as f:
             self.log.debug("Loading config...")
             return json.load(f)
 
@@ -249,8 +235,7 @@ class Kat(commands.Bot):
                     n, c = load_cog(self, cog)
                     self.loaded_cogs[n] = c
                 except TypeError as e:
-                    self.log.exception(
-                        "Failed to load cog: {}".format(cog), exc_info=e)
+                    self.log.exception("Failed to load cog: {}".format(cog), exc_info=e)
             self.log.info("Loaded startup cogs.")
 
     def initialize(self):
@@ -258,51 +243,26 @@ class Kat(commands.Bot):
 
         _tries = 0
         _disconnected = False
-        while _tries is not 10 and not _disconnected:
+        while _tries != 10 and not _disconnected:
             self.log.info("Attempting to connect to Discord...")
             try:
-                self.loop.run_until_complete(
-                    self.login(self.settings["token"]))
+                self.loop.run_until_complete(self.login(self.settings["token"]))
                 self.loop.run_until_complete(self.connect(reconnect=False))
                 _disconnected = True
             except (discord.HTTPException, socket.gaierror, Exception) as err:
                 self.log.warning(
-                    "Failed to connect to Discord. Waiting {} seconds".format(_tries * 5))
+                    "Failed to connect to Discord. Waiting {} seconds".format(
+                        _tries * 5
+                    )
+                )
                 time.sleep(_tries * 5)
 
                 self.log.warning(err)
                 _tries += 1
 
-    # TODO: think about moving this to a different module? Not sure if this belongs in the main kat file.
-
-    def calculate_lines(self):
-        """ Goes through every file in bot.cogs/ and bot.utils/ and counts the lines. Used for presence"""
-
-        def _calc(file_path) -> int:
-            """Recursively search through file_path and count all file lines"""
-            lines = 0
-            for file in os.listdir(file_path):
-                if os.path.isdir(file_path + "/" + file) and "__" not in file:
-                    #self.log.debug("is directory: " + file_path + "/" + file)
-                    lines += _calc(file_path + "/" + file)
-                else:
-                    if "__" not in file or "logs" not in file and file.endswith(".py"):
-                        try:
-                            #self.log.debug("counting file: " + file_path + "/" + file)
-                            lines += sum(1 for line in open(file_path +
-                                                            "/" + file, encoding="utf-8"))
-                            # self.log.debug(lines)
-                        except:
-                            pass
-            return lines
-
-        count = _calc('bot/cogs') + _calc('bot/utils')
-        return count
-
 
 if __name__ == "__main__":
 
-    # New: Discord-Py 1.5.0 requires new intents for presence and member information to be passed to bot.
     intents = discord.Intents.default()
     intents.members = True
     intents.presences = True
