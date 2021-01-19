@@ -19,7 +19,7 @@
     },
     "command": {
         "kat_load": [
-            "Loaded cog `{cog_name}` successfully!\nCommand List:\n`{cmds}`"
+            "Loaded cog(s) successfully!\nCommand List:\n`{cmds}`"
         ],
         "kat_unload": [
             "I've unloaded `{cog_name}`."
@@ -30,12 +30,10 @@
         "kat_reload": [
             "Reloaded cog `{cog_name}` successfully!\nCommand List:\n`{cmds}`"
         ],
-        "kat_stop":
-        [
+        "kat_stop": [
             "さようなら"
         ],
-        "kat_restart":
-        [
+        "kat_restart": [
             "行ってきます"
         ],
         "kat_maintenance_on": [
@@ -52,7 +50,6 @@
         "help_link": [
             "A full list of commands is available [here](https://kat.reign-network.co.uk/commands.php?prefix={prefix})\nNeed support? Get assistance from my creator [here](https://discord.gg/VFBy7faTPP)"
         ]
-
     },
     "error": {
         "arg_missing": [
@@ -70,7 +67,9 @@
         "NoEntryPointError": [
             "Wh- Where... Hmm... I can't find how to load this one... Make sure there's an entry point for me!"
         ],
-        "ExtensionNotLoaded": ["That's not even loaded! Job done!"]
+        "ExtensionNotLoaded": [
+            "That's not even loaded! Job done!"
+        ]
     },
     "special": {}
 }

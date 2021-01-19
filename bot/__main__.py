@@ -91,7 +91,6 @@ class Kat(commands.Bot):
         """Obsolete. Return default prefix."""
         raise DeprecationWarning(
             "Bot-wide prefixes are deprecated, instead fetch prefixes from Guild settings!")
-        # return self.default_prefix
 
     @property
     def log(self):
@@ -119,8 +118,6 @@ class Kat(commands.Bot):
             self._is_maintenance_mode = False
             self.dispatch("maintenance_mode", False)
             self.is_restart_scheduled = 0
-
-    # TODO: This might be more belonging in a file todo with logging...
 
     def _clean_logs(self):
         """ Archives the last latest.log and gets it ready for this instance's logging"""

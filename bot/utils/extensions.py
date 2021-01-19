@@ -7,24 +7,21 @@ import traceback
 import random
 import inspect
 import importlib
-import inspect
 import pkgutil
 from typing import Iterator
-
 from string import Template
-import asyncio
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import errors, Cog
 
-
 from bot.utils import logger, events, database
-from bot.utils.models import KatGuild, KatMember, KatUser
 
 
 # TODO: Think about fragmenting this class.
 class KatCog(commands.Cog):
     """discord.Cog extension for Kat support."""
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -48,8 +45,7 @@ class KatCog(commands.Cog):
 
     def load_settings(self):
         try:
-            self.settings = self.bot.settings['cogs'][self.qualified_name.lower(
-            )]
+            self.settings = self.bot.settings["cogs"][self.qualified_name.lower()]
         except KeyError:
             self.settings = {}
 
@@ -60,12 +56,11 @@ class KatCog(commands.Cog):
 
     def get_guild_setting(self, guild_id: discord.Guild, setting_key, default=None):
         """
-            Attempt to retrieve a guild setting (setting_key) from the DB
-            If the guild has no key for setting_key, then return default
+        Attempt to retrieve a guild setting (setting_key) from the DB
+        If the guild has no key for setting_key, then return default
         """
         self.log.debug("fetching guild_setting")
-        guild_settings = self.sql.ensure_exists(
-            "KatGuild", guild_id=guild_id).settings
+        guild_settings = self.sql.ensure_exists("KatGuild", guild_id=guild_id).settings
         try:
             guild_settings = json.loads(guild_settings)
         except json.JSONDecodeError:
@@ -77,13 +72,12 @@ class KatCog(commands.Cog):
             _result = _result.get(x, {})
             self.log.debug(_result)
             if _result == {}:
-                self.log.warning(
-                    "Key {} doesn't exist in {}".format(x, guild_settings))
+                self.log.warning("Key {} doesn't exist in {}".format(x, guild_settings))
         return _result
 
     def get_guild_all_settings(self, guild_id):
         """
-            Mostly for verbosity. Returns the JSON dict for a guild's settings
+        Mostly for verbosity. Returns the JSON dict for a guild's settings
         """
         guild = self.sql.ensure_exists("KatGuild", guild_id=guild_id)
         try:
@@ -94,7 +88,7 @@ class KatCog(commands.Cog):
 
     def set_guild_setting(self, guild_id: discord.Guild, setting_key, value):
         guild, guild_json = self.get_guild_all_settings(guild_id)
-        self._nested_set(guild_json, setting_key.split('.'), value)
+        self._nested_set(guild_json, setting_key.split("."), value)
         self.log.debug(guild_json)
 
         jsonified = json.dumps(guild_json)
@@ -108,11 +102,11 @@ class KatCog(commands.Cog):
         dic[keys[-1]] = value
 
     def ensure_guild_setting(self, guild_id: discord.Guild, setting_key, default):
-        """
-            Checks if a guild_setting of setting_key exists. If not it creates the key with the value of default
+        """Checks if a guild_setting of setting_key exists.
+        If not it creates the key with the value of default
         """
         _ = self.get_guild_setting(guild_id, setting_key)
-        if _ == None:
+        if _ is None:
             # guild setting doesnt exist
             self.set_guild_setting(guild_id, setting_key, default)
 
@@ -120,21 +114,22 @@ class KatCog(commands.Cog):
 
     def load_responses(self):
         # Load responses
-        self.responses['common'] = read_resource(
-            "/languages/english/common.json")
+        self.responses["common"] = read_resource("/languages/english/common.json")
         self.log.info("Loaded responses for common")
         try:
             # Try to load any cog-specific responses
             # TODO: Per-guild languages
-            self.responses[self.qualified_name.lower()] = \
-                read_resource(
-                    "/languages/english/{}.json".format(self.qualified_name.lower()))
+            self.responses[self.qualified_name.lower()] = read_resource(
+                "/languages/english/{}.json".format(self.qualified_name.lower())
+            )
 
-            self.log.info("Loaded responses for {}".format(
-                self.qualified_name))
+            self.log.info("Loaded responses for {}".format(self.qualified_name))
         except (FileNotFoundError, IOError):
             self.log.warning(
-                "Failed to load Cog-Specific language file for `{}`".format(self.qualified_name))
+                "Failed to load Cog-Specific language file for `{}`".format(
+                    self.qualified_name
+                )
+            )
 
     def get_response(self, response, **args):
         _path = response.split(".")
@@ -142,8 +137,7 @@ class KatCog(commands.Cog):
         for x in _path:
             _result = _result.get(x, {})
             if _result == {}:
-                raise KeyError(
-                    "Key {} doesn't exist in {}".format(x, response))
+                raise KeyError("Key {} doesn't exist in {}".format(x, response))
         choice = random.choice(_result).format(**args, cog=self, bot=self.bot)
         return choice
 
@@ -154,8 +148,7 @@ class KatCog(commands.Cog):
         for x in _path:
             _result = _result.get(x, {})
             if _result == {}:
-                raise KeyError(
-                    "Key {} doesn't exist in {}".format(x, embed))
+                raise KeyError("Key {} doesn't exist in {}".format(x, embed))
 
         json_string = json.dumps(_result)
 
@@ -168,53 +161,49 @@ class KatCog(commands.Cog):
     async def throw_command_error_to_message(self, ctx, error):
         exc_type, _, exc_traceback = sys.exc_info()
         self.log.warning(
-            f"{ctx.command} encountered an error: {error} : {exc_type} {exc_traceback}")
+            f"{ctx.command} encountered an error: {error} : {exc_type} {exc_traceback}"
+        )
         embed = discord.Embed(color=discord.Color.red())
-        embed.set_author(name="Command Failed",
-                         icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1")
-        embed.description = "```py\n{}\n```".format(
-            traceback.format_exc(limit=2))
+        embed.set_author(
+            name="Command Failed",
+            icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
+        )
+        embed.description = "```py\n{}\n```".format(traceback.format_exc(limit=2))
         await ctx.send(embed=embed)
 
     async def cog_command_error(self, ctx, error):
 
         if isinstance(error, commands.MissingPermissions):
-            await ctx.channel.send(self.get_response("common.error.missing_permissions", cmd=ctx.command))
+            await ctx.channel.send(
+                self.get_response("common.error.missing_permissions", cmd=ctx.command)
+            )
             return
 
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.channel.send(self.get_response("common.error.missing_args", args=error.param.name))
+            await ctx.channel.send(
+                self.get_response("common.error.missing_args", args=error.param.name)
+            )
             return
 
         if isinstance(error, commands.MemberNotFound):
-            await ctx.channel.send(self.get_response("common.error.member_not_found", error=error.argument))
+            await ctx.channel.send(
+                self.get_response("common.error.member_not_found", error=error.argument)
+            )
             return
 
         try:
             self.log.exception(error.original)
-        except:
+        except Exception:
             pass
         self.log.warn("error: " + str(error))
         self.log.warn(str(type(error)))
-        await ctx.channel.send(self.get_response('common.error.command_error'))
+        await ctx.channel.send(self.get_response("common.error.command_error"))
 
     async def cog_before_invoke(self, ctx):
         self.log.info(
-            f"[USER {ctx.author.name} | {ctx.author.id}] [GUILD {ctx.guild.name} | {ctx.guild.id}] Performed {ctx.command}")
-
-    # async def cog_check(self, ctx) -> bool:
-    #     """Only allow speficied roles to invoke the commands in this cog."""
-    #     guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
-    #     # guild setting generation.
-    #     roles = guild.ensure_setting("roles", {'moderators': [
-    #                                  '111111111111111111'], 'administrators': ['administrator', '111111111111111111']})
-
-    #     except commands.errors.MissingAnyRole:
-    #         await ctx.send(self.get_response('common.error.permission_error'))
-    #         return False
-
-    #     except Exception as err:
-    #         self.log.warn(err)
+            f"[USER {ctx.author.name} | {ctx.author.id}] [GUILD {ctx.guild.name}"
+            f" | {ctx.guild.id}] Performed {ctx.command}"
+        )
 
     def cog_unload(self):
         self.log.info(f"Unloading {self.qualified_name}")
@@ -234,10 +223,13 @@ def walk_extensions() -> Iterator[str]:
     """Yield extension names from the cogs subpackage."""
     # Avoid circular import.
     from bot import cogs
+
     def on_error(name: str):
         raise ImportError(name=name)
 
-    for module in pkgutil.walk_packages(cogs.__path__, f"{cogs.__name__}.", onerror=on_error):
+    for module in pkgutil.walk_packages(
+        cogs.__path__, f"{cogs.__name__}.", onerror=on_error
+    ):
         if unqualify(module.name).startswith("_"):
             # Ignore module/package names starting with an underscore.
             continue
@@ -255,10 +247,14 @@ def load_cog(bot, cog_name) -> Cog:
     """Attempts to load a cog from 'cogs/'"""
     try:
         matches = get_cog_name_matches(cog_name)
+
+        loaded = []
         for cog in matches:
             bot.load_extension(cog)
-            bot.log.info("Loaded %s." % cog_name)
-            return cog_name, bot.get_cog(cog_name)
+            if bot.get_cog(cog.split(".")[-1].capitalize()):
+                loaded.append(bot.get_cog(cog.split(".")[-1].capitalize()))
+
+            return cog_name, loaded
 
         raise errors.ExtensionNotFound
 
@@ -267,6 +263,7 @@ def load_cog(bot, cog_name) -> Cog:
         bot.log.warn("re-raising exception: %s" % err)
         raise err
 
+
 def get_cog_name_matches(cog_name):
     matches = []
     for extension in walk_extensions():
@@ -274,14 +271,17 @@ def get_cog_name_matches(cog_name):
             matches.append(extension)
     return matches
 
+
 def unload_cog(bot, cog_name) -> Cog:
     """Attempts to unload a cog from 'cogs/'"""
 
     try:
         # Find extension
         matches = get_cog_name_matches(cog_name)
-        if matches > 1:
-            raise errors.ExtensionNotFound(f"Ambiguous extension name. Choose between the following:\n{matches}")
+        if len(matches) > 1:
+            raise errors.ExtensionNotFound(
+                f"Ambiguous extension name. Choose between the following:\n{matches}"
+            )
 
         old_cog = bot.get_cog(matches[0])
         bot.unload_extension(matches[0])
@@ -300,11 +300,13 @@ def compress_file(path):
         compressed = gzip.compress(f.read())
     return compressed
 
+
 def read_resource(filepath: str):
     """Read data from a resource file filepath located in bot/resources/"""
     if os.path.exists("bot/resources/" + filepath):
         with open("bot/resources/" + filepath, "r", encoding="utf-8") as f:
             return json.load(f)
+
 
 def write_resource(filepath: str, data):
     """Write data to a resource file filepath located in bot/resources/"""

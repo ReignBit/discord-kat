@@ -1,6 +1,3 @@
-
-import json
-import time
 import math
 
 from discord.ext import commands
@@ -9,42 +6,41 @@ import MySQLdb._exceptions
 
 from bot.utils.extensions import KatCog
 import bot.utils.permissions as permissions
-from bot.utils.models import KatUser, KatGuild, KatMember
+from bot.utils.models import KatMember
 
 
 class Level(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
 
-
-        # This announcement attaches itself to $level and $leaderboard. Use this to announce things todo with levels.
+        # This announcement attaches itself to $level and $leaderboard.
+        # Use this to announce things todo with levels.
         self.announcement = ""
-        self.ignore_chars = self.bot.settings['cogs']['level']['ignore_chars']
+        self.ignore_chars = self.bot.settings["cogs"]["level"]["ignore_chars"]
 
         self.level_boundaries = {}
-        self.generate_level_boundaries(500)
-        self.award_levels = {
-            10: 5,
-            50: 6,
-            69: 7,
-            100: 8
-        }
+        self.generate_level_boundaries(1000)
+        self.award_levels = {10: 5, 50: 6, 69: 7, 100: 8}
 
         # Instance variables
-        self.global_freeze = False      #global level freeze. Overrides guild settings if set to True
+        self.global_freeze = (
+            False  # global level freeze. Overrides guild settings if set to True
+        )
 
-        self.debug_mode = True          #Extra verbosity when user's gain xp.
+        self.debug_mode = True  # Extra verbosity when user's gain xp.
         if self.bot.maintenance_mode:
             self.global_freeze = True
             self.debug_mode = True
-            self.announcement = ":warning: Kat is undergoing Backend Maintenance :warning: \n :snowflake: Global freeze due to maintenance :snowflake:"
+            self.announcement = ":warning: Kat is undergoing Backend Maintenance :warning: \n" \
+                ":snowflake: Global freeze due to maintenance :snowflake:"
 
     @commands.Cog.listener()
     async def on_maintenance_mode(self, value):
         if self.bot.maintenance_mode:
             self.global_freeze = True
             self.log.debug_mode = True
-            self.announcement = ":warning: Kat is undergoing Backend Maintenance :warning: \n :snowflake: Global freeze due to maintenance :snowflake:"
+            self.announcement = ":warning: Kat is undergoing Backend Maintenance :warning: \n" \
+                ":snowflake: Global freeze due to maintenance :snowflake:"
         else:
             self.global_freeze = False
             self.log.debug_mode = True
@@ -71,10 +67,11 @@ class Level(KatCog):
             return guild.ensure_setting("settings.level.freeze", False)
 
         except MySQLdb._exceptions.IntegrityError:
-            self.log.warn("Failed to check guild freeze status for GID:{}".format(guild_id))
+            self.log.warn(
+                "Failed to check guild freeze status for GID:{}".format(guild_id)
+            )
             # If something goes wrong then freeze levels.
             return True
-
 
     # Used only on cog_load. Not used for calculation, just for visual.
     def generate_level_boundaries(self, amount):
@@ -86,35 +83,39 @@ class Level(KatCog):
                 self.level_boundaries[level] = x * x
                 last_level = level
 
-
     # Used when we need to award XP from message length.
     def xp_algorithm(self, msglen, guild):
-        return int(min(max((msglen / 0.9) * 0.3, 10), 200) * self.sql.ensure_exists("KatGuild", guild_id=guild.id).ensure_setting("settings.level.xp_multi", 1.0))
-
+        return int(
+            min(max((msglen / 0.9) * 0.3, 10), 200)
+            * self.sql.ensure_exists("KatGuild", guild_id=guild.id).ensure_setting(
+                "settings.level.xp_multi", 1.0
+            )
+        )
 
     # The function that adds xp to user and calculates new levels.
     async def give_xp(self, message):
 
-        member = self.sql.ensure_exists("KatMember", guild_id=message.guild.id, user_id=message.author.id)
+        member = self.sql.ensure_exists(
+            "KatMember", guild_id=message.guild.id, user_id=message.author.id
+        )
         curr_xp = member.xp
         curr_level = member.lvl
-
 
         awarded_xp = self.xp_algorithm(len(message.clean_content), message.guild)
         new_xp = int(curr_xp + awarded_xp)
         new_level = self.calculate_level(new_xp)
 
         if curr_level is not new_level:
-            await message.channel.send("You leveled up! **Level `{}`**".format(new_level), delete_after=5)
+            await message.channel.send(
+                "You leveled up! **Level `{}`**".format(new_level), delete_after=5
+            )
 
         member.xp = new_xp
         member.lvl = new_level
 
-
     # Gets a level from xp amount
     def calculate_level(self, xp):
         return int((1 + math.sqrt(1 + 8 * (xp) / 40)) / 2)
-
 
     @commands.group()
     async def level(self, ctx):
@@ -123,28 +124,38 @@ class Level(KatCog):
             # If the user is running a subcommand of level, then do nothing.
             return
 
-        member = self.sql.ensure_exists("KatMember", guild_id=ctx.guild.id, user_id=ctx.author.id)
+        member = self.sql.ensure_exists(
+            "KatMember", guild_id=ctx.guild.id, user_id=ctx.author.id
+        )
 
         xp, level = member.xp, member.lvl
         boundry = self.level_boundaries[int(level) + 1]
 
         embed = discord.Embed(color=1233827)
-        embed.set_author(name="{}'s Level".format(ctx.author.display_name), icon_url=ctx.author.avatar_url)
+        embed.set_author(
+            name="{}'s Level".format(ctx.author.display_name),
+            icon_url=ctx.author.avatar_url,
+        )
         embed.description = ""
         if self.global_freeze or self.check_guild_freeze_status(ctx.guild.id):
             embed.description += "⚠ Levels are currently frozen ⚠\n"
-        if len(self.announcement) is not 0:
+        if len(self.announcement) != 0:
             embed.description += self.announcement
-        embed.add_field(name="Level `{}`".format(level), value="`{}xp / {}xp`".format(xp, boundry))
+        embed.add_field(
+            name="Level `{}`".format(level), value="`{}xp / {}xp`".format(xp, boundry)
+        )
 
         await ctx.send(embed=embed)
-
 
     @commands.command()
     async def leaderboard(self, ctx):
         """Shows the guild's top 10 users with the most XP"""
         self.log.debug("Leaderboard?")
-        leaders = self.sql.query("KatMember").filter_by(guild_id=ctx.guild.id).order_by(KatMember.xp)[:-11:-1]
+        leaders = (
+            self.sql.query("KatMember")
+            .filter_by(guild_id=ctx.guild.id)
+            .order_by(KatMember.xp)[:-11:-1]
+        )
         self.log.debug(leaders)
 
         try:
@@ -153,21 +164,27 @@ class Level(KatCog):
                 try:
                     username = ctx.guild.get_member(leader.user_id).display_name
                 except AttributeError:
-                    # Here we delete the user if we can't see them. However im unsure how this would work with +100 servers.
-                    self.log.info("Deleting user_id {} from the DB.".format(leader.user_id))
+                    # Here we delete the user if we can't see them.
+                    # However im unsure how this would work with +100 servers.
+                    self.log.info(
+                        "Deleting user_id {} from the DB.".format(leader.user_id)
+                    )
                     self.sql.query("KatUser").filter_by(user_id=leader.user_id).delete()
                     leaders.pop(leaders.index(leader))
 
-                string += "{}. {}   |   `{}`/`{}`\n".format(leaders.index(leader) + 1, username, leader.lvl, leader.xp)
+                string += "{}. {}   |   `{}`/`{}`\n".format(
+                    leaders.index(leader) + 1, username, leader.lvl, leader.xp
+                )
         except Exception as e:
             self.log.exception(e)
 
         embed = discord.Embed(color=1233827)
-        embed.set_author(name=f"Level Leaderboards for {ctx.guild.name}", icon_url=ctx.guild.icon_url)
+        embed.set_author(
+            name=f"Level Leaderboards for {ctx.guild.name}", icon_url=ctx.guild.icon_url
+        )
         embed.description = self.announcement
         embed.description += string
         await ctx.send(embed=embed)
-
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -177,12 +194,12 @@ class Level(KatCog):
             self.log.info("GLOBAL LEVEL FREEZE SET TO: " + str(self.global_freeze))
             await ctx.send("Global Level Freeze: {}".format(self.global_freeze))
 
-
     @commands.command(hidden=True)
     @commands.is_owner()
     async def level_announcement(self, ctx, *args):
         self.announcement = " ".join(args)
         await ctx.send("Set level announcement to:\n`{}`".format(" ".join(args)))
+
 
 def setup(bot):
     bot.add_cog(Level(bot))
