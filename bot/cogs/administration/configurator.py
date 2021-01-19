@@ -118,7 +118,7 @@ class Configurator(KatCog):
         if new_prefix is None:
             await ctx.send(self.get_response("configurator.command.prefix_none", curr_prefix=self.bot.get_custom_prefix(self.bot, ctx)[2]))
         else:
-            if new_prefix not in self.settings['banned_prefix_chars']:
+            if new_prefix not in self.settings.get('banned_prefix_chars'):
                 # [name_mention, nickname_mention, prefix]
                 old = self.bot.get_custom_prefix(self.bot, ctx)[2]
                 self.sql.edit_prefix(ctx.guild.id, new_prefix)

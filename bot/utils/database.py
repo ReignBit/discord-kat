@@ -25,7 +25,7 @@ class SqlEngine:
 
         if bot is not None:
             self.bot = bot
-            _sql_settings = self.bot.settings['sql']
+            _sql_settings = self.bot.settings.get('sql')
             SqlEngine.MASTER_SQL = self
             self._sql_engine = sqlalchemy.create_engine("mysql+mysqldb://{}:{}@{}/{}".format(_sql_settings['user'],
                                                                                              _sql_settings['password'],

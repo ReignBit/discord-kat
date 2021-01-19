@@ -16,6 +16,7 @@ from discord.ext import commands
 from discord.ext.commands import errors, Cog
 
 from bot.utils import logger, events, database
+from bot.utils.setting_loader import Settings
 
 
 # TODO: Think about fragmenting this class.
@@ -27,7 +28,7 @@ class KatCog(commands.Cog):
 
         self.log = logger.get_logger(self.qualified_name)
 
-        self.sql = database.SqlEngine()
+        self.sql = self.bot.sql
         self.sql.create_sql_session()
 
         # Load GLOBAL settings from config/
@@ -44,15 +45,7 @@ class KatCog(commands.Cog):
             self.log.info("Registered command %s" % cmd.qualified_name)
 
     def load_settings(self):
-        try:
-            self.settings = self.bot.settings["cogs"][self.qualified_name.lower()]
-        except KeyError:
-            self.settings = {}
-
-    def _fallback_setting(self, key):
-        """Fetches fallback setting in case self.bot.settings returns KeyError"""
-        # TODO: do this.
-        pass
+        self.settings = self.bot.settings.from_key(f"cogs.{self.qualified_name.lower()}")
 
     def get_guild_setting(self, guild_id: discord.Guild, setting_key, default=None):
         """
@@ -312,3 +305,32 @@ def write_resource(filepath: str, data):
     """Write data to a resource file filepath located in bot/resources/"""
     with open("bot/resources/" + filepath, "w") as f:
         f.write(data)
+
+
+def calculate_lines():
+    """ Goes through every file in bot.cogs/ and bot.utils/ and counts the lines. Used for presence"""
+
+    def _calc(file_path) -> int:
+        """Recursively search through file_path and count all file lines"""
+        lines = 0
+        for file in os.listdir(file_path):
+            if os.path.isdir(file_path + "/" + file) and "__" not in file:
+                # self.log.debug("is directory: " + file_path + "/" + file)
+                lines += _calc(file_path + "/" + file)
+            else:
+                if "__" not in file or "logs" not in file and file.endswith(".py"):
+                    try:
+                        # self.log.debug("counting file: " + file_path + "/" + file)
+                        lines += sum(
+                            1
+                            for line in open(
+                                file_path + "/" + file, encoding="utf-8"
+                            )
+                        )
+                        # self.log.debug(lines)
+                    except (IOError, PermissionError):
+                        pass
+        return lines
+
+    count = _calc("bot/cogs") + _calc("bot/utils")
+    return count

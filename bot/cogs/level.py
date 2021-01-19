@@ -16,7 +16,7 @@ class Level(KatCog):
         # This announcement attaches itself to $level and $leaderboard.
         # Use this to announce things todo with levels.
         self.announcement = ""
-        self.ignore_chars = self.bot.settings["cogs"]["level"]["ignore_chars"]
+        self.ignore_chars = self.settings.get("ignore_chars")
 
         self.level_boundaries = {}
         self.generate_level_boundaries(1000)
