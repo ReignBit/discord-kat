@@ -1,8 +1,6 @@
 import requests
-import asyncio
 
 from discord.ext import commands
-import discord
 
 from bot.utils.extensions import KatCog
 
@@ -45,14 +43,15 @@ class Dyndns(KatCog):
                 self.log.debug(res)
             else:
                 self.log.warn(
-                    "Did not receive 200 status code. Something went wrong and the IP was probably not updated.")
+                    "Did not receive 200 status code. IP was probably not updated.")
             # Update current ip and godaddys ip
             self.current_ip, self.daddy_ip = self.update_ips()
 
             # Test to see if the request worked.
             if self.daddy_ip != self.current_ip:
                 self.log.warn(
-                    "GoDaddy DNS did not update successfully. The API Gateway could be down or the request failed somehow.")
+                    "GoDaddy DNS did not update successfully.")
+
 
 def setup(bot):
     bot.add_cog(Dyndns(bot))

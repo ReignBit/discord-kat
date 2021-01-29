@@ -38,12 +38,12 @@ class Milsim(KatCog):
             await self.announcement_message.delete()
 
         if date == "" or time == "":
-            await ctx.send(self.get_response("command.session.blank"))
+            await ctx.send(self.get_response("milsim.command.session.blank"))
             return
         else:
 
             if self.is_session_scheduled:
-                await ctx.send(self.get_response("command.session.already"))
+                await ctx.send(self.get_response("milsim.command.session.already"))
 
             try:
                 datetime.datetime.strptime(date, "%d/%m/%y")
@@ -57,13 +57,13 @@ class Milsim(KatCog):
                 except Exception as err:
                     self.log.warn(err)
                     await ctx.send(
-                        self.get_response("command.session.invalid", date=date)
+                        self.get_response("milsim.command.session.invalid", date=date)
                     )
                     return
 
             if len(time.split(":")[1]) != 2:
                 await ctx.send(
-                    self.get_response("command.session.invalid_time", time=time)
+                    self.get_response("milsim.command.session.invalid_time", time=time)
                 )
                 return
 

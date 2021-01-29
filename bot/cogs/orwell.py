@@ -46,8 +46,7 @@ class Orwell(KatCog):
         return False
 
     def get_service(self, service_id=None):
-
-        if service_id == None:
+        if service_id is None:
             result = requests.request(
                 "GET",
                 f"{self.host}/services",
@@ -139,7 +138,7 @@ class Orwell(KatCog):
             )
 
         elif result.status_code == 413:
-            embed.description = "Not enough Free RAM to start this service.\n\nTry stopping some services first."
+            embed.description = "Insufficient Resources."
 
         else:
             mention = self.bot.app_info.owner.mention
@@ -184,7 +183,7 @@ class Orwell(KatCog):
         except FailedToFindServiceException:
             embed = discord.Embed(colour=discord.Colour(0x2A8550))
             embed.set_author(
-                name=f"Failed to find service",
+                name="Failed to find service",
                 icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
             )
             embed.description = f"No service with the id of `{id}` could be found."
@@ -224,7 +223,7 @@ class Orwell(KatCog):
         except json.JSONDecodeError:
             embed = discord.Embed(colour=discord.Colour.red())
             embed.set_author(
-                name=f"Invalid JSON Payload",
+                name="Invalid JSON Payload",
                 icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
             )
             embed.description = (
@@ -234,7 +233,7 @@ class Orwell(KatCog):
         except FailedToFindServiceException:
             embed = discord.Embed(colour=discord.Colour.red())
             embed.set_author(
-                name=f"Failed to find service",
+                name="Failed to find service",
                 icon_url="https://cdn.discordapp.com/emojis/669531431428685824.png?v=1",
             )
             embed.description = f"No service with the id of `{id}` could be found."

@@ -62,7 +62,8 @@
             ]
         },
         "fun": {
-            "gify_api_key": "gify api key"
+            "gify_api_key": "gify api key",
+            "gify_anon_key": ""
         },
         "orwell": {
             "apihost": "orwell won't work for public release",
