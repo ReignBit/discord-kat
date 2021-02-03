@@ -26,7 +26,7 @@ class Fun(KatCog):
 
         self.bot.run_day_check = True
 
-    async def _get_and_cache_gifs(self, search_query):
+    def _get_and_cache_gifs(self, search_query):
         self.log.info(f"Caching gifs for {search_query} for 1 hour...")
         r = requests.get(
             "https://api.tenor.com/v1/search?q={}&key={}&limit=8&anon_id={}".format(
@@ -36,21 +36,22 @@ class Fun(KatCog):
             )
         )
         if r.status_code == 200:
-            self.gif_cache[search_query] = (time.now(), json.loads(r.content))
-            return self.gif_cache[search_query]
+            self.gif_cache[search_query] = (time.time(), json.loads(r.content))
+            raw = self.gif_cache[search_query][1]
+            return raw['results'][random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
         return None
 
-    def _get_gif(self, search_query):
+    async def _get_gif(self, search_query):
         if search_query not in self.gif_cache:
             return self._get_and_cache_gifs(search_query)
 
-        if self.gif_cache[search_query][0] + 3600 < time.now():
+        if self.gif_cache[search_query][0] + 3600 < time.time():
             self.log.debug(f"Cache expired for {search_query}.")
             return self._get_and_cache_gifs(search_query)
 
         # return a random gif from cached gif links.
         raw = self.gif_cache[search_query][1]
-        return raw[random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
+        return raw['results'][random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
 
     def _generate_generic_embed(self, ctx, gif, action, user: discord.User = None):
         if user is None:
@@ -157,6 +158,9 @@ class Fun(KatCog):
     async def emote(self, ctx, action: str, user: discord.User = None):
         """Do a custom emote ($emote <action> <mention>)"""
         gif = await self._get_gif("anime%20{}".format(action))
+
+        self.log.debug(self._generate_generic_embed(ctx, gif, action, user).image.url)
+
         await ctx.channel.send(
             embed=self._generate_generic_embed(ctx, gif, action, user)
         )
