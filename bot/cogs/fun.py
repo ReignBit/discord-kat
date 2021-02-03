@@ -40,17 +40,17 @@ class Fun(KatCog):
             return self.gif_cache[search_query]
         return None
 
-        def _get_gif(self, search_query):
-            if search_query not in self.gif_cache:
-                return self._get_and_cache_gifs(search_query)
+    def _get_gif(self, search_query):
+        if search_query not in self.gif_cache:
+            return self._get_and_cache_gifs(search_query)
 
-            if self.gif_cache[search_query][0] + 3600 < time.now():
-                self.log.debug(f"Cache expired for {search_query}.")
-                return self._get_and_cache_gifs(search_query)
+        if self.gif_cache[search_query][0] + 3600 < time.now():
+            self.log.debug(f"Cache expired for {search_query}.")
+            return self._get_and_cache_gifs(search_query)
 
-            # return a random gif from cached gif links.
-            raw = self.gif_cache[search_query][1]
-            return raw[random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
+        # return a random gif from cached gif links.
+        raw = self.gif_cache[search_query][1]
+        return raw[random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
 
     def _generate_generic_embed(self, ctx, gif, action, user: discord.User = None):
         if user is None:
