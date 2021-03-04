@@ -1,4 +1,3 @@
-import json
 import random
 import datetime
 import re
@@ -31,29 +30,28 @@ class Fun(KatCog):
     def _get_and_cache_gifs(self, search_query):
         self.log.info(f"Caching gifs for {search_query} for 1 hour...")
         r = requests.get(
-            "https://api.tenor.com/v1/search?q={}&key={}&limit=8&anon_id={}".format(
+            "https://api.tenor.com/v1/search?q={}&key={}&limit=20&anon_id={}".format(
                 search_query,
                 self.settings.get("gify_api_key"),
                 self.settings.get("gify_anon_key"),
             )
         )
         if r.status_code == 200:
-            self.gif_cache[search_query] = (time.time(), r.json())
-            raw = self.gif_cache[search_query][1]
-            return raw['results'][random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
-        return None
+            gif_links = []
+            for gif in r.json()['results']:
+                # All of the gif links.
+                gif_links.append(gif["media"][0]["gif"]["url"])
+
+            self.gif_cache[search_query] = (time.time(), gif_links)
 
     async def _get_gif(self, search_query):
-        if search_query not in self.gif_cache:
-            return self._get_and_cache_gifs(search_query)
-
-        if self.gif_cache[search_query][0] + 3600 < time.time():
+        if search_query not in self.gif_cache or self.gif_cache[search_query][0] + 3600 < time.time():
             self.log.debug(f"Cache expired for {search_query}.")
-            return self._get_and_cache_gifs(search_query)
+            self._get_and_cache_gifs(search_query)
 
         # return a random gif from cached gif links.
         raw = self.gif_cache[search_query][1]
-        return raw['results'][random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
+        return raw[random.randrange(0, len(raw))]
 
     def _generate_generic_embed(self, ctx, gif, action, user: discord.User = None):
         if user is None:
@@ -160,9 +158,6 @@ class Fun(KatCog):
     async def emote(self, ctx, action: str, user: discord.User = None):
         """Do a custom emote ($emote <action> <mention>)"""
         gif = await self._get_gif("anime%20{}".format(action))
-
-        self.log.debug(self._generate_generic_embed(ctx, gif, action, user).image.url)
-
         await ctx.channel.send(
             embed=self._generate_generic_embed(ctx, gif, action, user)
         )
@@ -417,8 +412,23 @@ class Fun(KatCog):
             if self.cocks > cock_highscore:
                 guild.set_setting("fun.cocks", cock_highscore + 1)
                 cock_highscore += 1
+                gif = await self._get_gif("celebrate")
+
+                # If new highscore achived, send embed.
+                embedHighscore = discord.Embed
+                embedHighscore = discord.Embed()
+                embedHighscore.title = "NEW COCK HIGHSCORE"
+                embedHighscore.description = " "
+                embedHighscore.color = 3092790
+                embedHighscore.set_image(url=gif)
+                await ctx.send(embed=embedHighscore)
+
         elif arg == "start":
             self.cocks = 0
+        elif arg == "reset":
+            self.cocks = 0
+            guild.set_setting("fun.cocks", 0)
+            cock_highscore = 0
 
         embed = discord.Embed()
         embed.title = "Official Cock Counter"
