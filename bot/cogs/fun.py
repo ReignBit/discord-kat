@@ -38,7 +38,7 @@ class Fun(KatCog):
             )
         )
         if r.status_code == 200:
-            self.gif_cache[search_query] = (time.time(), json.loads(r.json()))
+            self.gif_cache[search_query] = (time.time(), r.json())
             raw = self.gif_cache[search_query][1]
             return raw['results'][random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
         return None
