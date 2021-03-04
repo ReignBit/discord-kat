@@ -16,8 +16,10 @@ class Fun(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
 
+        self.cocks = 0
         self.gif_cache = {}
-        self.megu_cache_time = 3600  # 1 hour until it re-gets gifs
+        # TODO: Not sure if this is still used.
+        self.megu_cache_time = 3600
 
         # day of the week reponse flags
         self.dayresponse = [
@@ -402,6 +404,28 @@ class Fun(KatCog):
         last_message = last_message.replace("thi", "wi")
 
         await ctx.send(last_message)
+
+        # Cock counter for omegle
+    @commands.command(aliases=["cc"])
+    async def cockcounter(self, ctx, arg=None):
+        """Keep track of cocks seen during omegle ($cockcounter)"""
+        guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
+        cock_highscore = guild.ensure_setting("fun.cocks", 0)
+
+        if arg is None:
+            self.cocks += 1
+            if self.cocks > cock_highscore:
+                guild.set_setting("fun.cocks", cock_highscore + 1)
+                cock_highscore += 1
+        elif arg == "start":
+            self.cocks = 0
+
+        embed = discord.Embed()
+        embed.title = "Official Cock Counter"
+        embed.description = "Current Amount of cocks: {}\n" \
+                            "Current Highscore: {}".format(self.cocks, cock_highscore)
+        embed.color = 15843965
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
