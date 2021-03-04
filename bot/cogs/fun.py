@@ -1,4 +1,3 @@
-import json
 import random
 import datetime
 import re
@@ -16,8 +15,10 @@ class Fun(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
 
+        self.cocks = 0
         self.gif_cache = {}
-        self.megu_cache_time = 3600  # 1 hour until it re-gets gifs
+        # TODO: Not sure if this is still used.
+        self.megu_cache_time = 3600
 
         # day of the week reponse flags
         self.dayresponse = [
@@ -27,31 +28,34 @@ class Fun(KatCog):
         self.bot.run_day_check = True
 
     def _get_and_cache_gifs(self, search_query):
+        """Download gif cache and store results for 1 hour."""
         self.log.info(f"Caching gifs for {search_query} for 1 hour...")
         r = requests.get(
-            "https://api.tenor.com/v1/search?q={}&key={}&limit=8&anon_id={}".format(
+            "https://api.tenor.com/v1/search?q={}&key={}&limit=20&anon_id={}".format(
                 search_query,
                 self.settings.get("gify_api_key"),
                 self.settings.get("gify_anon_key"),
             )
         )
         if r.status_code == 200:
-            self.gif_cache[search_query] = (time.time(), json.loads(r.content))
-            raw = self.gif_cache[search_query][1]
-            return raw['results'][random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
-        return None
+            gif_links = []
+            for gif in r.json()['results']:
+                # All of the gif links.
+                gif_links.append(gif["media"][0]["gif"]["url"])
+
+            self.gif_cache[search_query] = (time.time(), gif_links)
 
     async def _get_gif(self, search_query):
-        if search_query not in self.gif_cache:
-            return self._get_and_cache_gifs(search_query)
-
-        if self.gif_cache[search_query][0] + 3600 < time.time():
+        """Returns a random gif from the gif cache.
+        If query is not already in the cache, we download gif collection and then cache it.
+        """
+        if search_query not in self.gif_cache or self.gif_cache[search_query][0] + 3600 < time.time():
             self.log.debug(f"Cache expired for {search_query}.")
-            return self._get_and_cache_gifs(search_query)
+            self._get_and_cache_gifs(search_query)
 
         # return a random gif from cached gif links.
         raw = self.gif_cache[search_query][1]
-        return raw['results'][random.randrange(0, len(raw))]["media"][0]["gif"]["url"]
+        return raw[random.randrange(0, len(raw))]
 
     def _generate_generic_embed(self, ctx, gif, action, user: discord.User = None):
         if user is None:
@@ -158,9 +162,6 @@ class Fun(KatCog):
     async def emote(self, ctx, action: str, user: discord.User = None):
         """Do a custom emote ($emote <action> <mention>)"""
         gif = await self._get_gif("anime%20{}".format(action))
-
-        self.log.debug(self._generate_generic_embed(ctx, gif, action, user).image.url)
-
         await ctx.channel.send(
             embed=self._generate_generic_embed(ctx, gif, action, user)
         )
@@ -402,6 +403,43 @@ class Fun(KatCog):
         last_message = last_message.replace("thi", "wi")
 
         await ctx.send(last_message)
+
+        # Cock counter for omegle
+    @commands.command(aliases=["cc"])
+    async def cockcounter(self, ctx, arg=None):
+        """Keep track of cocks seen during omegle ($cockcounter)"""
+        guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
+        cock_highscore = guild.ensure_setting("fun.cocks", 0)
+
+        if arg is None:
+            self.cocks += 1
+            if self.cocks > cock_highscore:
+                guild.set_setting("fun.cocks", cock_highscore + 1)
+                cock_highscore += 1
+                gif = await self._get_gif("celebrate")
+
+                # If new highscore achived, send embed.
+                embedHighscore = discord.Embed
+                embedHighscore = discord.Embed()
+                embedHighscore.title = "NEW COCK HIGHSCORE"
+                embedHighscore.description = " "
+                embedHighscore.color = 3092790
+                embedHighscore.set_image(url=gif)
+                await ctx.send(embed=embedHighscore)
+
+        elif arg == "start":
+            self.cocks = 0
+        elif arg == "reset":
+            self.cocks = 0
+            guild.set_setting("fun.cocks", 0)
+            cock_highscore = 0
+
+        embed = discord.Embed()
+        embed.title = "Official Cock Counter"
+        embed.description = "Current Amount of cocks: {}\n" \
+                            "Current Highscore: {}".format(self.cocks, cock_highscore)
+        embed.color = 15843965
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
