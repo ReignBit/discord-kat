@@ -28,6 +28,7 @@ class Fun(KatCog):
         self.bot.run_day_check = True
 
     def _get_and_cache_gifs(self, search_query):
+        """Download gif cache and store results for 1 hour."""
         self.log.info(f"Caching gifs for {search_query} for 1 hour...")
         r = requests.get(
             "https://api.tenor.com/v1/search?q={}&key={}&limit=20&anon_id={}".format(
@@ -45,6 +46,9 @@ class Fun(KatCog):
             self.gif_cache[search_query] = (time.time(), gif_links)
 
     async def _get_gif(self, search_query):
+        """Returns a random gif from the gif cache.
+        If query is not already in the cache, we download gif collection and then cache it.
+        """
         if search_query not in self.gif_cache or self.gif_cache[search_query][0] + 3600 < time.time():
             self.log.debug(f"Cache expired for {search_query}.")
             self._get_and_cache_gifs(search_query)
