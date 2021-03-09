@@ -9,7 +9,7 @@ import requests
 from discord.ext import commands
 
 from bot.utils.extensions import KatCog, write_resource
-
+from bot.utils.constants import GuildSettings
 
 class Fun(KatCog):
     def __init__(self, bot):
@@ -409,12 +409,12 @@ class Fun(KatCog):
     async def cockcounter(self, ctx, arg=None):
         """Keep track of cocks seen during omegle ($cockcounter)"""
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
-        cock_highscore = guild.ensure_setting("fun.cocks", 0)
+        cock_highscore = guild.ensure_setting(GuildSettings.fun_counter, 0)
 
         if arg is None:
             self.cocks += 1
             if self.cocks > cock_highscore:
-                guild.set_setting("fun.cocks", cock_highscore + 1)
+                guild.set_setting(GuildSettings.fun_counter, cock_highscore + 1)
                 cock_highscore += 1
                 gif = await self._get_gif("celebrate")
 
@@ -431,7 +431,7 @@ class Fun(KatCog):
             self.cocks = 0
         elif arg == "reset":
             self.cocks = 0
-            guild.set_setting("fun.cocks", 0)
+            guild.set_setting(GuildSettings.fun_counter, 0)
             cock_highscore = 0
 
         embed = discord.Embed()

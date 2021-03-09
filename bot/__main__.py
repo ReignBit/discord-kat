@@ -4,17 +4,18 @@ import os
 import time
 import json
 import sys
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 import discord
 from discord.ext import commands
 
-from bot.utils.extensions import compress_file, load_cog, calculate_lines
 import bot.utils.logger as logger
 import bot.utils.events as events
 import bot.utils.database as database
+from bot.utils.extensions import compress_file, load_cog, calculate_lines
 from bot.utils.setting_loader import Settings
+from bot.utils.constants import GuildSettings
 
 # TODO: Change this when we change to a Docker solution.
 __version__ = str(
@@ -217,7 +218,7 @@ class Kat(commands.Bot):
         """Callable, returns the prefix for the message's guild."""
         prefix = self.sql.ensure_exists(
             "KatGuild", guild_id=message.guild.id
-        ).ensure_setting("settings.prefix", self.settings.get("default_prefix"))
+        ).ensure_setting(GuildSettings.prefix, self.settings.get("default_prefix"))
         return commands.when_mentioned_or(*prefix)(bot, message)
 
     def load_settings(self):

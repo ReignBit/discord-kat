@@ -5,8 +5,9 @@ import discord
 import MySQLdb._exceptions
 
 from bot.utils.extensions import KatCog
-import bot.utils.permissions as permissions
 from bot.utils.models import KatMember
+from bot.utils.constants import GuildSettings
+import bot.utils.permissions as permissions
 
 
 class Level(KatCog):
@@ -64,7 +65,7 @@ class Level(KatCog):
         """Get's a guild's freeze status from the DB"""
         try:
             guild = self.sql.ensure_exists("KatGuild", guild_id=guild_id)
-            return guild.ensure_setting("settings.level.freeze", False)
+            return guild.ensure_setting(GuildSettings.level_freeze, False)
 
         except MySQLdb._exceptions.IntegrityError:
             self.log.warn(
@@ -88,7 +89,7 @@ class Level(KatCog):
         return int(
             min(max((msglen / 0.9) * 0.3, 10), 200)
             * self.sql.ensure_exists("KatGuild", guild_id=guild.id).ensure_setting(
-                "settings.level.xp_multi", 1.0
+                GuildSettings.level_xp_multi, 1.0
             )
         )
 

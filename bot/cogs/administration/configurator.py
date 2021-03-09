@@ -3,6 +3,7 @@ import discord
 
 from bot.utils.extensions import KatCog
 from bot.utils.models import KatGuild
+from bot.utils.constants import GuildSettings
 
 
 def is_subcommand():
@@ -104,14 +105,14 @@ class Configurator(KatCog):
         )
 
     def _add_to_moderator(self, role: discord.Role, guild: KatGuild):
-        mods = guild.get_setting("roles.moderators")
+        mods = guild.get_setting(GuildSettings.roles_moderators)
         mods.append(role.id)
-        guild.set_setting("roles.moderators", mods)
+        guild.set_setting(GuildSettings.roles_moderators, mods)
 
     def _add_to_admin(self, role: discord.Role, guild: KatGuild):
-        mods = guild.get_setting("roles.administrators")
+        mods = guild.get_setting(GuildSettings.roles_admins)
         mods.append(role.id)
-        guild.set_setting("roles.administrators", mods)
+        guild.set_setting(GuildSettings.roles_admins, mods)
 
     @roles.command()
     async def add(self, ctx, role: discord.Role, group: str):
@@ -169,11 +170,11 @@ class Configurator(KatCog):
         fields = [
             (
                 ":eight_spoked_asterisk:  XP Multiplier: "
-                f"{guild.ensure_setting('settings.level.xp_multi', 1.0)}",
+                f"{guild.ensure_setting(GuildSettings.level_xp_multi, 1.0)}",
                 "multi <float>",
             ),
             (
-                f":snowflake: Freeze Status: {guild.ensure_setting('settings.level.freeze', False)}",
+                f":snowflake: Freeze Status: {guild.ensure_setting(GuildSettings.level_freeze, False)}",
                 "freeze",
             ),
         ]
@@ -184,7 +185,7 @@ class Configurator(KatCog):
     async def freeze(self, ctx):
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
         new = guild.set_setting(
-            "settings.level.freeze", not guild.get_setting("settings.level.freeze")
+            GuildSettings.level_freeze, not guild.get_setting(GuildSettings.level_freeze)
         )
         if new:
             await ctx.send(self.get_response("configurator.config.level.freeze"))
@@ -192,13 +193,11 @@ class Configurator(KatCog):
             await ctx.send(self.get_response("configurator.config.level.unfreeze"))
 
     @level.command()
-    async def multi(self, ctx, mul):
+    async def multi(self, ctx, mul: float):
+        mul = min(max(0.0, mul), 2.5)
+
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
-        if type(mul) is not float:
-            raise TypeError
-        if mul < 0.0 or mul > 2.5:
-            raise TypeError
-        guild.set_setting("settings.level.xp_multi", mul)
+        guild.set_setting(GuildSettings.level_xp_multi, mul)
         await ctx.send(
             self.get_response("configurator.config.level.multi_success", multi=mul)
         )
