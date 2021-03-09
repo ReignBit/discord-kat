@@ -27,3 +27,13 @@ class GuildSettings:
     level_xp_multi: str = "settings.level.xp_multi"
     roles_moderators: str = "roles.moderators"
     roles_admins: str = "roles.administrators"
+
+
+class HomeGuild:
+    """Constants for our Discord Guild's use"""
+    reign_guild_id: int = 311612862554439692
+    rm_chat_channel: int = 432214639305162752
+
+    reign_guild2_id: int = 485578455795367967
+
+    dev_guild: int = 438542169855361025

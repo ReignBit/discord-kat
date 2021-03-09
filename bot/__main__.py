@@ -53,6 +53,7 @@ class Kat(commands.Bot):
         self.sql.create_sql_session()
 
         self.app_info = None  # gets populated by self.application_info() in on_ready()
+        self.id = -1  # quick access to bot's id, populated on_ready()
         self.is_first_boot = 1
         self.is_restart_scheduled = 0
         self._current_presence = None
@@ -177,6 +178,7 @@ class Kat(commands.Bot):
         # INIT
         self.log.info("Initialization")
         self.app_info = await self.application_info()
+        self.id = self.app_info.id
         self.log.info(f"Kat is connected to {len(self.guilds)} guilds")
         self.guild_count = len(self.guilds)
         self.setup_events()
