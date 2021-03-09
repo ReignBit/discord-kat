@@ -3,7 +3,7 @@ import discord
 
 from bot.utils.extensions import KatCog
 from bot.utils.models import KatGuild
-from bot.utils.constants import GuildSettings
+from bot.utils.constants import GuildSettings, Color
 
 
 def is_subcommand():
@@ -19,7 +19,7 @@ class Configurator(KatCog):
 
     def _config_embed_builder(self, ctx, command_path, fields, cog_name="Kat"):
         embed = discord.Embed()
-        embed.color = 3092790
+        embed.color = Color.invisble
         embed.set_author(name="{} Config for {}".format(cog_name, ctx.guild.name))
         embed.set_footer(
             text="Use `{}` to view and change settings.".format(
@@ -185,7 +185,8 @@ class Configurator(KatCog):
     async def freeze(self, ctx):
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
         new = guild.set_setting(
-            GuildSettings.level_freeze, not guild.get_setting(GuildSettings.level_freeze)
+            GuildSettings.level_freeze,
+            not guild.get_setting(GuildSettings.level_freeze),
         )
         if new:
             await ctx.send(self.get_response("configurator.config.level.freeze"))
