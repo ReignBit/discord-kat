@@ -1,22 +1,29 @@
 """Database model classes"""
 import json
 
-import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import event, Column, Integer, String, BigInteger, BLOB, Date, ForeignKey, null, TEXT, JSON
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy import Column, Integer, BigInteger, Date, ForeignKey, TEXT
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
 
 Base = declarative_base()
+
 
 class KatGuild(Base):
     """Guild information from Kat DB."""
     __tablename__ = "guild_data"
 
     guild_id = Column("guild_id", BigInteger, primary_key=True)
-    #prefix = Column(String, default="$")
     _settings = Column("guild_settings", TEXT())
+
+    @property
+    def id(self):
+        return self.guild_id
+
+    @id.setter
+    def id(self, value):
+        raise Exception("id is a read-only property!")
 
     @hybrid_property
     def prefix(self):
@@ -94,6 +101,14 @@ class KatUser(Base):
     birthday = Column(Date, default=None)
     birthday_years = Column(Integer, default=0)
 
+    @property
+    def id(self):
+        return self.user_id
+
+    @id.setter
+    def id(self, value):
+        raise Exception("id is a read-only property!")
+
     def __repr__(self):
         return "<User (id={})>".format(self.user_id)
 
@@ -109,17 +124,23 @@ class KatMember(Base):
     """
     __tablename__ = "member_data"
 
-    guild_id = Column(BigInteger, ForeignKey(
-        'guild_data.guild_id'), primary_key=True)
-    user_id = Column(BigInteger, ForeignKey(
-        'user_data.user_id'), primary_key=True)
+    guild_id = Column(BigInteger, ForeignKey('guild_data.guild_id'), primary_key=True)
+    user_id = Column(BigInteger, ForeignKey('user_data.user_id'), primary_key=True)
     _settings = Column("data", TEXT)
-    #TODO: Use getters and setter protection for these.
+
     xp = Column(Integer, default=1)
     lvl = Column(Integer, default=1)
 
     user = relationship("KatUser")
     guild = relationship("KatGuild")
+
+    @property
+    def id(self):
+        return (self.guild_id, self.user_id)
+
+    @id.setter
+    def id(self, value):
+        raise Exception("id is a read-only property!")
 
     def set_xp(self, value):
         self.xp = value

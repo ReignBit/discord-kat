@@ -15,8 +15,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import errors, Cog
 
-from bot.utils import logger, events, database
-from bot.utils.setting_loader import Settings
+from bot.utils import logger, events
 
 
 # TODO: Think about fragmenting this class.
@@ -253,7 +252,7 @@ def load_cog(bot, cog_name) -> Cog:
 
     except errors.ExtensionError as err:
         bot.log.warn("Failed to load Cog: %s" % cog_name)
-        bot.log.warn("re-raising exception: %s" % err)
+        bot.log.warn("re-raising exception: %s" % err.__cause__)
         raise err
 
 
