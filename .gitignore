@@ -108,11 +108,13 @@ logs/
 
 .idea/
 config/config.json
+config/config.yml
 _meta/
 
 *.beat
 *.db
 config.json
+config.yml
 
 # vscode
 .vscode/

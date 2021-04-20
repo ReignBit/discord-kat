@@ -5,6 +5,7 @@ import discord
 
 from bot.utils.extensions import KatCog
 
+
 class Anonymous(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
@@ -14,7 +15,6 @@ class Anonymous(KatCog):
     @commands.Cog.listener()
     async def on_message(self, message):
         guild = discord.utils.get(self.bot.guilds, id=311612862554439692)
-
 
         if (type(message.channel) is discord.channel.DMChannel and message.author in guild.members and message.author != self.bot.user):
             if message.content.startswith("RANT "):

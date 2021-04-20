@@ -3,7 +3,7 @@ import discord
 
 from bot.utils.extensions import KatCog
 from bot.utils.models import KatGuild
-from bot.utils.constants import GuildSettings, Color
+from bot.utils import constants
 
 
 def is_subcommand():
@@ -19,7 +19,7 @@ class Configurator(KatCog):
 
     def _config_embed_builder(self, ctx, command_path, fields, cog_name="Kat"):
         embed = discord.Embed()
-        embed.color = Color.invisble
+        embed.color = constants.Color.invisble
         embed.set_author(name="{} Config for {}".format(cog_name, ctx.guild.name))
         embed.set_footer(
             text="Use `{}` to view and change settings.".format(
@@ -105,14 +105,14 @@ class Configurator(KatCog):
         )
 
     def _add_to_moderator(self, role: discord.Role, guild: KatGuild):
-        mods = guild.get_setting(GuildSettings.roles_moderators)
+        mods = guild.get_setting(constants.GuildSettings.roles_moderators)
         mods.append(role.id)
-        guild.set_setting(GuildSettings.roles_moderators, mods)
+        guild.set_setting(constants.GuildSettings.roles_moderators, mods)
 
     def _add_to_admin(self, role: discord.Role, guild: KatGuild):
-        mods = guild.get_setting(GuildSettings.roles_admins)
+        mods = guild.get_setting(constants.GuildSettings.roles_admins)
         mods.append(role.id)
-        guild.set_setting(GuildSettings.roles_admins, mods)
+        guild.set_setting(constants.GuildSettings.roles_admins, mods)
 
     @roles.command()
     async def add(self, ctx, role: discord.Role, group: str):
@@ -142,7 +142,7 @@ class Configurator(KatCog):
                 )
             )
         else:
-            if new_prefix not in self.settings.get("banned_prefix_chars"):
+            if new_prefix not in constants.Configurator.banned_prefix_chars:
                 # [name_mention, nickname_mention, prefix]
                 old = self.bot.get_custom_prefix(self.bot, ctx)[2]
                 self.sql.edit_prefix(ctx.guild.id, new_prefix)
@@ -170,11 +170,12 @@ class Configurator(KatCog):
         fields = [
             (
                 ":eight_spoked_asterisk:  XP Multiplier: "
-                f"{guild.ensure_setting(GuildSettings.level_xp_multi, 1.0)}",
+                f"{guild.ensure_setting(constants.GuildSettings.level_xp_multi, 1.0)}",
                 "multi <float>",
             ),
             (
-                f":snowflake: Freeze Status: {guild.ensure_setting(GuildSettings.level_freeze, False)}",
+                f":snowflake: Freeze Status: \
+                {guild.ensure_setting(constants.GuildSettings.level_freeze, False)}",
                 "freeze",
             ),
         ]
@@ -185,8 +186,8 @@ class Configurator(KatCog):
     async def freeze(self, ctx):
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
         new = guild.set_setting(
-            GuildSettings.level_freeze,
-            not guild.get_setting(GuildSettings.level_freeze),
+            constants.GuildSettings.level_freeze,
+            not guild.get_setting(constants.GuildSettings.level_freeze),
         )
         if new:
             await ctx.send(self.get_response("configurator.config.level.freeze"))
@@ -198,7 +199,7 @@ class Configurator(KatCog):
         mul = min(max(0.0, mul), 2.5)
 
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
-        guild.set_setting(GuildSettings.level_xp_multi, mul)
+        guild.set_setting(constants.GuildSettings.level_xp_multi, mul)
         await ctx.send(
             self.get_response("configurator.config.level.multi_success", multi=mul)
         )

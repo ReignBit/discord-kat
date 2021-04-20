@@ -3,6 +3,7 @@ import requests
 from discord.ext import commands
 
 from bot.utils.extensions import KatCog
+from bot.utils import constants
 
 
 class Dyndns(KatCog):
@@ -11,11 +12,11 @@ class Dyndns(KatCog):
         super().__init__(bot)
         self.hidden = True
 
-        self.url = f"https://api.godaddy.com/v1/domains/{self.settings.get('domain')}/records/A/@"
+        self.url = f"https://api.godaddy.com/v1/domains/{constants.Dyndns.domain}/records/A/@"
         self.session = requests.Session()
 
         self.session.headers.update(
-            {'Authorization': 'sso-key ' + self.settings.get("auth_key")})
+            {'Authorization': 'sso-key ' + constants.Dyndns.key})
 
     def update_ips(self):
         ip = requests.get('https://api.ipify.org').text

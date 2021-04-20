@@ -1,0 +1,117 @@
+bot:
+  def_prefix: "$"
+  token: "BOT TOKEN HERE"
+  maintenance_mode: 0
+  startup_cogs:
+    - "core"
+    - "level"
+    - "fun"
+    - "milsim"
+    - "orwell"
+    - "dyndns"
+    - "exchange"
+    - "translate"
+    - "anonymous"
+    - "ttt"
+    - "configurator"
+
+home_guilds:
+  ids:
+    # Your home guilds here.
+    # Used for private things
+    - 0000000000000
+
+logger:
+  compress: 1
+  level: 0
+  filename: "latest.log"
+
+api:
+  url: "API ROOT URL HERE"
+  auth_type: "Basic"
+  token: "API TOKEN/AUTH CREDS HERE"
+
+cogs:
+  core:
+    restart_message_guild_id: 000000000000000000
+    restart_message_client_id: 000000000000000000
+    ensure_file_integrity:
+      - "bot/cogs/core.py"
+      - "bot/__main__.py"
+      - "bot/utils/extensions.py"
+      - "bot/utils/events.py"
+      - "bot/utils/models.py"
+
+  orwell:
+    host: "ORWELL HOST HERE"
+    user: "USERNAME"
+    paswd: "PASSWORD"
+    allowed_roles:
+      - 000000000000000000
+
+
+  milsim:
+    op_name: "Latest operation name here"
+
+  twitch:
+    host: "https://api.twitch.tv/helix/"
+    apiclientid: "CLIENT ID HERE"
+    apisecret: "CLIENT SECRET HERE"
+
+  level:
+    ignore_chars:
+      - "http"
+      - "/"
+      - "@"
+      - "!"
+      - "<"
+      - ">"
+      - "#"
+      - "$"
+      - "~"
+      - "-"
+
+  configurator:
+    banned_prefix_chars:
+      - "\n"
+      - "\t"
+      - "\\"
+
+  fun:
+    api_key: "GIPHY API KEY"
+    anon_key: "GIPHY ANON KEY"
+
+  dyndns:
+    key: "GO DADDY API KEY"
+    domain: "DOMAIN RECORD TO UPDATE"
+
+event_manager:
+  max_event_timer: 86400
+  debug: 1
+  events:
+    - minute_event: 60
+    - five_minute_event: 300
+    - hour_event: 3600
+
+guild_settings:
+  prefix: "settings.prefix"
+  announce_channel: "settings.announce.channel"
+  announce_message: "settings.announce.message"
+  fun_counter: "settings.fun.chighscore"
+  level_freeze: "settings.level.freeze"
+  level_xp_multi: "settings.level.xp_multi"
+  moderators: "roles.moderators"
+  admins: "roles.administrators"
+
+colours:
+  blue:           0x3775a8
+  bright_green:   0x01d277
+  orange:         0xe67e22
+  pink:           0xcf84e0
+  purple:         0xb734eb
+  soft_green:     0x68c290
+  soft_orange:    0xf9cb54
+  soft_red:       0xcd6d6d
+  white:          0xfffffe
+  yellow:         0xffd241
+  invisible:      0x2f3136

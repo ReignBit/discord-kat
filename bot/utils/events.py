@@ -1,9 +1,9 @@
 import asyncio
 
 from bot.utils import logger as KatLogger
+from bot.utils import constants
 
-
-MAX_EVENT_TIMER = 86400
+MAX_EVENT_TIMER = constants.EventManager.MAX_EVENT_TIMER
 
 
 class EventManager:
@@ -39,11 +39,6 @@ class EventManager:
 
         self.bot = bot
         self._events = {}
-
-        try:
-            self.settings = self.bot.settings.from_key("EventManager")
-        except KeyError:
-            self.settings = {}
 
     def create_event(self, name, seconds):
         """Register an event `name` to loop every `seconds`."""

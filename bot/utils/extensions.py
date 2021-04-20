@@ -27,12 +27,6 @@ class KatCog(commands.Cog):
 
         self.log = logger.get_logger(self.qualified_name)
 
-        self.sql = self.bot.sql
-        self.sql.create_sql_session()
-
-        # Load GLOBAL settings from config/
-        self.load_settings()
-
         # Response Handling.
         self.responses = {}
         self.load_responses()
@@ -43,67 +37,8 @@ class KatCog(commands.Cog):
         for cmd in self.walk_commands():
             self.log.info("Registered command %s" % cmd.qualified_name)
 
-    def load_settings(self):
-        self.settings = self.bot.settings.from_key(f"cogs.{self.qualified_name.lower()}")
-
-    def get_guild_setting(self, guild_id: discord.Guild, setting_key, default=None):
-        """
-        Attempt to retrieve a guild setting (setting_key) from the DB
-        If the guild has no key for setting_key, then return default
-        """
-        self.log.debug("fetching guild_setting")
-        guild_settings = self.sql.ensure_exists("KatGuild", guild_id=guild_id).settings
-        try:
-            guild_settings = json.loads(guild_settings)
-        except json.JSONDecodeError:
-            return default
-
-        _path = setting_key.split(".")
-        _result = guild_settings
-        for x in _path:
-            _result = _result.get(x, {})
-            self.log.debug(_result)
-            if _result == {}:
-                self.log.warning("Key {} doesn't exist in {}".format(x, guild_settings))
-        return _result
-
-    def get_guild_all_settings(self, guild_id):
-        """
-        Mostly for verbosity. Returns the JSON dict for a guild's settings
-        """
-        guild = self.sql.ensure_exists("KatGuild", guild_id=guild_id)
-        try:
-            guild_settings = json.loads(guild.settings)
-        except json.JSONDecodeError:
-            return guild, {}
-        return guild, guild_settings
-
-    def set_guild_setting(self, guild_id: discord.Guild, setting_key, value):
-        guild, guild_json = self.get_guild_all_settings(guild_id)
-        self._nested_set(guild_json, setting_key.split("."), value)
-        self.log.debug(guild_json)
-
-        jsonified = json.dumps(guild_json)
-
-        guild.settings = jsonified
-        self.bot.sql_session.commit()
-
-    def _nested_set(self, dic, keys, value):
-        for key in keys[:-1]:
-            dic = dic.setdefault(key, {})
-        dic[keys[-1]] = value
-
-    def ensure_guild_setting(self, guild_id: discord.Guild, setting_key, default):
-        """Checks if a guild_setting of setting_key exists.
-        If not it creates the key with the value of default
-        """
-        _ = self.get_guild_setting(guild_id, setting_key)
-        if _ is None:
-            # guild setting doesnt exist
-            self.set_guild_setting(guild_id, setting_key, default)
-
-    # Response stuff
-
+    # Responses
+    # TODO: This could also become like constants.responses?
     def load_responses(self):
         # Load responses
         self.responses["common"] = read_resource("/languages/english/common.json")
@@ -133,6 +68,7 @@ class KatCog(commands.Cog):
         choice = random.choice(_result).format(**args, cog=self, bot=self.bot)
         return choice
 
+    # TODO: same here?
     def get_embed(self, embed, **kwargs) -> dict:
         """Returns the embed JSON for embed, along with formatted args"""
         _path = embed.split(".")
@@ -201,7 +137,6 @@ class KatCog(commands.Cog):
         self.log.info(f"Unloading {self.qualified_name}")
         self.run = False
         self.event_manager.destroy()
-        self.sql.destroy()
         self.log.destroy()
         del self
 

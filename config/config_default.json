@@ -36,6 +36,10 @@
                 "bot/utils/database.py"
             ]
         },
+        "destiny": {
+            "api-root": "https://www.bungie.net/d1/platform/Destiny/",
+            "api-key": ""
+        },
         "dyndns": {
             "auth_key": "GoDaddy API Key and Secret here",
             "domain": "Domain to update here"

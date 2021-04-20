@@ -9,7 +9,7 @@ import requests
 from discord.ext import commands
 
 from bot.utils.extensions import KatCog, write_resource
-from bot.utils.constants import GuildSettings, Color, HomeGuild
+from bot.utils import constants
 
 
 class Fun(KatCog):
@@ -34,8 +34,8 @@ class Fun(KatCog):
         r = requests.get(
             "https://api.tenor.com/v1/search?q={}&key={}&limit=20&anon_id={}".format(
                 search_query,
-                self.settings.get("gify_api_key"),
-                self.settings.get("gify_anon_key"),
+                constants.Fun.api_key,
+                constants.Fun.anon_key,
             )
         )
         if r.status_code == 200:
@@ -69,7 +69,7 @@ class Fun(KatCog):
         }
 
         self.log.debug(user)
-        return self._generate_specific_embed(ctx, gif, responses, user, Color.soft_red)
+        return self._generate_specific_embed(ctx, gif, responses, user, constants.Color.soft_red)
 
     def _generate_specific_embed(
         self, ctx, gif, responses, user: discord.User = None, color=discord.Color.red()
@@ -106,8 +106,8 @@ class Fun(KatCog):
             return
 
         try:
-            guild = discord.utils.get(self.bot.guilds, id=HomeGuild.reign_guild_id)
-            channel = discord.utils.get(guild.channels, id=HomeGuild.rm_chat_channel)
+            guild = discord.utils.get(self.bot.guilds, id=constants.HomeGuild.reign_guild_id)
+            channel = discord.utils.get(guild.channels, id=constants.HomeGuild.rm_chat_channel)
         except AttributeError:
             # we mustn't be able to see Reign guild
             self.bot.run_day_check = False
@@ -132,7 +132,7 @@ class Fun(KatCog):
 
     @commands.Cog.listener()
     async def on_message(self, ctx):
-        if "gorl" in ctx.content.lower() and ctx.guild.id == 311612862554439692:
+        if "gorl" in ctx.content.lower() and ctx.guild.id in constants.HomeGuild.ids:
             emoji = discord.utils.get(
                 self.bot.get_guild(311612862554439692).emojis, name="gorl"
             )
@@ -405,12 +405,12 @@ class Fun(KatCog):
     async def cockcounter(self, ctx, arg=None):
         """Keep track of cocks seen during omegle ($cockcounter)"""
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
-        cock_highscore = guild.ensure_setting(GuildSettings.fun_counter, 0)
+        cock_highscore = guild.ensure_setting(constants.GuildSettings.fun_counter, 0)
 
         if arg is None:
             self.cocks += 1
             if self.cocks > cock_highscore:
-                guild.set_setting(GuildSettings.fun_counter, cock_highscore + 1)
+                guild.set_setting(constants.GuildSettings.fun_counter, cock_highscore + 1)
                 cock_highscore += 1
                 gif = await self._get_gif("celebrate")
 
@@ -419,7 +419,7 @@ class Fun(KatCog):
                 embedHighscore = discord.Embed()
                 embedHighscore.title = "NEW COCK HIGHSCORE"
                 embedHighscore.description = " "
-                embedHighscore.color = 3092790
+                embedHighscore.color = constants.Color.invisible
                 embedHighscore.set_image(url=gif)
                 await ctx.send(embed=embedHighscore)
 
@@ -427,7 +427,7 @@ class Fun(KatCog):
             self.cocks = 0
         elif arg == "reset":
             self.cocks = 0
-            guild.set_setting(GuildSettings.fun_counter, 0)
+            guild.set_setting(constants.GuildSettings.fun_counter, 0)
             cock_highscore = 0
 
         embed = discord.Embed()

@@ -46,6 +46,5 @@ class Exchange(KatCog):
         await ctx.author.send(embed=embed)
 
 
-
 def setup(bot):
     bot.add_cog(Exchange(bot))

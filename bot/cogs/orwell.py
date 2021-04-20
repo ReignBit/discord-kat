@@ -11,6 +11,7 @@ class FailedToFindServiceException(Exception):
     pass
 
 
+# TODO: Use APIClient for this?
 class Orwell(KatCog):
     def __init__(self, bot):
         super().__init__(bot)

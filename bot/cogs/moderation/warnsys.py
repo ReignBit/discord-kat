@@ -1,11 +1,9 @@
-import json
 import time
 from datetime import datetime
 
 import discord
 from discord.ext import commands
 
-from bot.utils.models import KatGuild, KatMember
 from bot.utils.extensions import KatCog
 
 
