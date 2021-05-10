@@ -1,0 +1,18 @@
+{
+    "error": {},
+    "command": {},
+    "embeds": {
+        "vote_started": {
+            "title": "${title}",
+            "color": 3092790,
+            "description": "\n${options}",
+            "footer": {
+                "text": "Vote Expires at {}"
+            },
+            "author": {
+                "name": "${owner.display_name}'s Poll",
+                "icon_url": "${owner.avatar_url}"
+            }
+        }
+    }
+}

@@ -4,17 +4,19 @@ import os
 import time
 import json
 import sys
-from pathlib import Path
 import subprocess
+
 
 import discord
 from discord.ext import commands
 
-from bot.utils.extensions import compress_file, load_cog, calculate_lines
 import bot.utils.logger as logger
 import bot.utils.events as events
-import bot.utils.database as database
-from bot.utils.setting_loader import Settings
+from bot.utils.extensions import load_cog, calculate_lines
+from bot.utils.models import Guild
+from bot.utils import constants
+from bot.utils.api import APIClient
+
 
 # TODO: Change this when we change to a Docker solution.
 __version__ = str(
@@ -31,9 +33,6 @@ class Kat(commands.Bot):
     LOGGER = logger.get_logger(__name__)
 
     def __init__(self, **options):
-        # Clean up latest.log ready for this instance's logging
-        self._clean_logs()
-
         self.log.info("Discord-py version: " + discord.__version__)
         self.log.info("Kat version: " + __version__)
 
@@ -41,32 +40,29 @@ class Kat(commands.Bot):
         self.start_time = time.time()
 
         self.code_line_count = calculate_lines()
-        self.settings = Settings.from_file(
-            "config/config.json", "config/config_default.json"
-        )
 
         self.is_launched_through_orwell = False
-        self._is_maintenance_mode = bool(self.settings.get("maintenance_mode"))
+        self._is_maintenance_mode = constants.Bot.maintenance_mode
 
-        self.sql = database.SqlEngine(self)
-        self.sql.create_sql_session()
+        # Old SQL
+        # self.sql = database.SqlEngine(self)
+        # self.sql.create_sql_session()
+
+        # New API
+        self.session = APIClient()
 
         self.app_info = None  # gets populated by self.application_info() in on_ready()
+        self.id = -1  # quick access to bot's id, populated on_ready()
         self.is_first_boot = 1
         self.is_restart_scheduled = 0
         self._current_presence = None
 
         self.guild_count = -1
-        self.default_prefix = self.settings.get("default_prefix")
+        self.default_prefix = constants.Bot.def_prefix
         self.event_manager = None
 
         # super call to commands.Bot
         super().__init__(self.get_custom_prefix, **options)
-
-    @property
-    def branch(self):
-        """Returns which production environment we are running"""
-        return self.settings.get("branch")
 
     @property
     def version(self):
@@ -99,39 +95,6 @@ class Kat(commands.Bot):
             self._is_maintenance_mode = False
             self.dispatch("maintenance_mode", False)
             self.is_restart_scheduled = 0
-
-    def _clean_logs(self):
-        """ Archives the last latest.log and gets it ready for this instance's logging"""
-        if "logs" not in os.listdir("."):
-            os.mkdir("logs")
-
-        if "latest.log" in os.listdir("logs"):
-            date = ""
-            first_line = ""
-            # open the latest log file
-            with open("logs/latest.log", "r") as f:
-                first_line = f.readline()
-            # extract the date and time from the first entry (would be approx. boot time)
-            date = first_line.split("]")[0][1:]  # DD-MM-YY HH:MM:SS
-            date = date.replace(":", "-").replace(" ", "_")
-
-            # TODO: Tidy this up, maybe change where we load the config to avoid loading config twice
-            _settings = json.load(open("config/config.json", "r"))
-            if _settings["logger"]["compress_logs"]:
-                # take the contents of latest.log and compress them to a new gzip file.
-                with open("logs/{}.log.gz".format(date), "wb") as f:
-                    f.write(compress_file("logs/latest.log"))
-            else:
-                os.rename("logs/latest.log", "logs/{}.log".format(date))
-
-            del _settings
-            # delete latest.log ready for new log
-            os.remove("logs/latest.log")
-
-            # remove archived logs that are less than 1024 bytes.
-            for f in os.listdir("logs"):
-                if f.endswith(".gz") and Path("logs/" + f).stat().st_size < 1024:
-                    os.remove("logs/" + f)
 
     async def on_error(self, event, *args, **kwargs):
         """Event called when an event raises an exception"""
@@ -176,6 +139,7 @@ class Kat(commands.Bot):
         # INIT
         self.log.info("Initialization")
         self.app_info = await self.application_info()
+        self.id = self.app_info.id
         self.log.info(f"Kat is connected to {len(self.guilds)} guilds")
         self.guild_count = len(self.guilds)
         self.setup_events()
@@ -197,27 +161,29 @@ class Kat(commands.Bot):
 
         self.is_first_boot = 0
 
-        self.sql.purge_unguilded_users()
-        for guild in self.guilds:
-            self.sql.ensure_exists("KatGuild", guild_id=guild.id)
+        # self.sql.purge_unguilded_users()
+        # for guild in self.guilds:
+        #     self.sql.ensure_exists("KatGuild", guild_id=guild.id)
 
     def setup_events(self):
         if not self.is_first_boot:
             self.log.debug("Not first boot. Skipping event creation.")
             return
 
-        _event_map = self.settings.get("EventManager.events")
+        _event_map = constants.EventManager.events
+        _event_map = {k: v for x in _event_map for k, v in x.items()}
+
         self.log.info("Initializing events...")
         self.event_manager = events.EventManager(self)
 
         self.event_manager.create_events(_event_map)
         self.log.info("Events intialized.")
 
-    def get_custom_prefix(self, bot, message):
+    async def get_custom_prefix(self, bot, message):
         """Callable, returns the prefix for the message's guild."""
-        prefix = self.sql.ensure_exists(
-            "KatGuild", guild_id=message.guild.id
-        ).ensure_setting("settings.prefix", self.settings.get("default_prefix"))
+        prefix = (await Guild.get(message.guild.id, self.session)).ensure_setting(
+            constants.GuildSettings.prefix, constants.Bot.def_prefix
+        )
         return commands.when_mentioned_or(*prefix)(bot, message)
 
     def load_settings(self):
@@ -230,7 +196,7 @@ class Kat(commands.Bot):
         """Goes through all cog names in settings.startup_cogs and attempts to load them."""
         if self.is_first_boot:
             self.log.info("Loading startup cogs...")
-            for cog in self.settings.get("startup_cogs"):
+            for cog in constants.Bot.startup_cogs:
                 try:
                     n, c = load_cog(self, cog)
                 except TypeError as e:
@@ -245,7 +211,7 @@ class Kat(commands.Bot):
         while _tries != 10 and not _disconnected:
             self.log.info("Attempting to connect to Discord...")
             try:
-                self.loop.run_until_complete(self.login(self.settings.get("token")))
+                self.loop.run_until_complete(self.login(constants.Bot.token))
                 self.loop.run_until_complete(self.connect(reconnect=False))
                 _disconnected = True
             except (discord.HTTPException, socket.gaierror, Exception) as err:

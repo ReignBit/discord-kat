@@ -9,6 +9,7 @@ import requests
 from discord.ext import commands
 
 from bot.utils.extensions import KatCog, write_resource
+from bot.utils import constants
 
 
 class Fun(KatCog):
@@ -33,13 +34,13 @@ class Fun(KatCog):
         r = requests.get(
             "https://api.tenor.com/v1/search?q={}&key={}&limit=20&anon_id={}".format(
                 search_query,
-                self.settings.get("gify_api_key"),
-                self.settings.get("gify_anon_key"),
+                constants.Fun.api_key,
+                constants.Fun.anon_key,
             )
         )
         if r.status_code == 200:
             gif_links = []
-            for gif in r.json()['results']:
+            for gif in r.json()["results"]:
                 # All of the gif links.
                 gif_links.append(gif["media"][0]["gif"]["url"])
 
@@ -49,7 +50,10 @@ class Fun(KatCog):
         """Returns a random gif from the gif cache.
         If query is not already in the cache, we download gif collection and then cache it.
         """
-        if search_query not in self.gif_cache or self.gif_cache[search_query][0] + 3600 < time.time():
+        if (
+            search_query not in self.gif_cache
+            or self.gif_cache[search_query][0] + 3600 < time.time()
+        ):
             self.log.debug(f"Cache expired for {search_query}.")
             self._get_and_cache_gifs(search_query)
 
@@ -58,23 +62,12 @@ class Fun(KatCog):
         return raw[random.randrange(0, len(raw))]
 
     def _generate_generic_embed(self, ctx, gif, action, user: discord.User = None):
-        if user is None:
-            embed = discord.Embed(
-                title=f"{ctx.author.display_name} performs {action} to everyone!"
-            )
-        else:
-            if user is not None and user.id != 379153719180394498:
-                user = ctx.guild.get_member(user.id)
-                embed = discord.Embed(
-                    title=f"{ctx.author.display_name} performs {action} to {user.display_name} O.o"
-                )
-            elif user.id == 379153719180394498:
-                embed = discord.Embed(
-                    title=f"{ctx.author.display_name} performs {action} to me!? :flushed:"
-                )
-        embed.set_image(url=gif)
-        embed.colour = discord.Color.red()
-        return embed
+        responses = {
+            "everyone": f"performs {action} to everyone!",
+            "user": "performs " + action + " to {user.display_name} O.o",
+            "self": f"performs {action} to me!? :flushed:",
+        }
+        return self._generate_specific_embed(ctx, gif, responses, user, constants.Color.soft_red)
 
     def _generate_specific_embed(
         self, ctx, gif, responses, user: discord.User = None, color=discord.Color.red()
@@ -85,7 +78,7 @@ class Fun(KatCog):
                 {
                     "everyone" : "kisses everyone! <3",
                     "user" : "kisses {user.display_name} Aww!",
-                    "kat" : "kisses Ka- Wait a minute! O.o"
+                    "self" : "kisses Ka- Wait a minute! O.o"
                 }
         """
         if user is None:
@@ -93,13 +86,13 @@ class Fun(KatCog):
                 title=f"{ctx.author.display_name} " + responses["everyone"]
             )
         else:
-            if user is not None and user.id != 379153719180394498:
+            if user is not None and user.id != self.bot.id:
                 user = ctx.guild.get_member(user.id)
                 embed = discord.Embed(
-                    title=f"{ctx.author.display_name} " + responses["user"].format(user)
+                    title=f"{ctx.author.display_name} " + responses['user'].format(user=user)
                 )
-            elif user.id == 379153719180394498:
-                embed = discord.Embed(title=responses["kat"])
+            elif user.id == self.bot.id:
+                embed = discord.Embed(title=responses["self"])
 
         embed.set_image(url=gif)
         embed.colour = color
@@ -111,8 +104,8 @@ class Fun(KatCog):
             return
 
         try:
-            guild = discord.utils.get(self.bot.guilds, id=311612862554439692)
-            channel = discord.utils.get(guild.channels, id=432214639305162752)
+            guild = discord.utils.get(self.bot.guilds, id=constants.HomeGuild.ids[0])
+            channel = discord.utils.get(guild.channels, id=constants.HomeGuild.channels[0])
         except AttributeError:
             # we mustn't be able to see Reign guild
             self.bot.run_day_check = False
@@ -137,7 +130,7 @@ class Fun(KatCog):
 
     @commands.Cog.listener()
     async def on_message(self, ctx):
-        if "gorl" in ctx.content.lower() and ctx.guild.id == 311612862554439692:
+        if "gorl" in ctx.content.lower() and ctx.guild.id in constants.HomeGuild.ids:
             emoji = discord.utils.get(
                 self.bot.get_guild(311612862554439692).emojis, name="gorl"
             )
@@ -174,7 +167,7 @@ class Fun(KatCog):
         responses = {
             "everyone": "spanks everyone!",
             "user": "spanks {user.display_name} kinky!",
-            "kat": "I-I'm sorry! ;-;",
+            "self": "I-I'm sorry! ;-;",
         }
 
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
@@ -187,8 +180,8 @@ class Fun(KatCog):
 
         responses = {
             "everyone": "noms everyone!",
-            "user": "takes a nibble of {user.display_name} tasty!",
-            "kat": "D-do I taste good?",
+            "user": "takes a nibble of {user.display_name}, tasty!",
+            "self": "D-do I taste good?",
         }
 
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
@@ -202,7 +195,7 @@ class Fun(KatCog):
         responses = {
             "everyone": "does lewd things to everyone!",
             "user": "lewdifies {user.display_name} How lewd!",
-            "kat": "Hentai!",
+            "self": "Hentai!",
         }
 
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
@@ -216,7 +209,7 @@ class Fun(KatCog):
         responses = {
             "everyone": "gives everyone a flower!",
             "user": "hands {user.display_name} a flower!",
-            "kat": "A flower for me? O.O",
+            "self": "A flower for me? O.O",
         }
 
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
@@ -230,7 +223,7 @@ class Fun(KatCog):
         responses = {
             "everyone": "kills everyone!",
             "user": "kills {user.display_name}! F",
-            "kat": "[insert death noises here]",
+            "self": "[insert death noises here]",
         }
 
         embed = self._generate_specific_embed(ctx, gif, responses, user=user)
@@ -244,12 +237,12 @@ class Fun(KatCog):
         if user is None:
             embed = discord.Embed(title=f"{ctx.author.display_name} cuddles everyone!")
         else:
-            if user is not None and user.id != 379153719180394498:
+            if user is not None and user.id != self.bot.id:
                 user = ctx.guild.get_member(user.id)
                 embed = discord.Embed(
                     title=f"{ctx.author.display_name} cuddles {user.display_name}:3"
                 )
-            elif user.id == 379153719180394498:
+            elif user.id == self.bot.id:
                 embed = discord.Embed(title="Nya~ (*´ω｀)")
         embed.set_image(url=gif)
         embed.colour = discord.Color.red()
@@ -263,12 +256,12 @@ class Fun(KatCog):
         if user is None:
             embed = discord.Embed(title=f"{ctx.author.display_name} pats everyone")
         else:
-            if user is not None and user.id != 379153719180394498:
+            if user is not None and user.id != self.bot.id:
                 user = ctx.guild.get_member(user.id)
                 embed = discord.Embed(
                     title=f"{ctx.author.display_name} pats {user.display_name}'s head :3"
                 )
-            elif user.id == 379153719180394498:
+            elif user.id == self.bot.id:
                 embed = discord.Embed(title="Nya~ (*´ω｀)")
         embed.set_image(url=gif)
         embed.colour = discord.Color.red()
@@ -282,12 +275,12 @@ class Fun(KatCog):
         if user is None:
             embed = discord.Embed(title=f"{ctx.author.display_name} licks everyone")
         else:
-            if user is not None and user.id != 379153719180394498:
+            if user is not None and user.id != self.bot.id:
                 user = ctx.guild.get_member(user.id)
                 embed = discord.Embed(
                     title=f"{ctx.author.display_name} licks {user.display_name} O.o"
                 )
-            elif user.id == 379153719180394498:
+            elif user.id == self.bot.id:
                 embed = discord.Embed(title="B-Baka!")
         embed.set_image(url=gif)
         embed.colour = discord.Color.red()
@@ -301,12 +294,12 @@ class Fun(KatCog):
         if user is None:
             embed = discord.Embed(title=f"{ctx.author.display_name} hugs everyone")
         else:
-            if user is not None and user.id != 379153719180394498:
+            if user is not None and user.id != self.bot.id:
                 user = ctx.guild.get_member(user.id)
                 embed = discord.Embed(
                     title=f"{ctx.author.display_name} hugs {user.display_name} :3"
                 )
-            elif user.id == 379153719180394498:
+            elif user.id == self.bot.id:
                 embed = discord.Embed(title="W-What are you doing! :flushed:")
         embed.set_image(url=gif)
         embed.colour = discord.Color.red()
@@ -320,12 +313,12 @@ class Fun(KatCog):
         if user is None:
             embed = discord.Embed(title=f"{ctx.author.display_name} slaps everyone!")
         else:
-            if user is not None and user.id != 379153719180394498:
+            if user is not None and user.id != self.bot.id:
                 user = ctx.guild.get_member(user.id)
                 embed = discord.Embed(
                     title=f"{ctx.author.display_name} slaps {user.display_name}!"
                 )
-            elif user.id == 379153719180394498:
+            elif user.id == self.bot.id:
                 embed = discord.Embed(title="いたい! That hurt!")
         embed.set_image(url=gif)
         embed.colour = discord.Color.red()
@@ -339,12 +332,12 @@ class Fun(KatCog):
         if user is None:
             embed = discord.Embed(title=f"{ctx.author.display_name} kisses everyone")
         else:
-            if user is not None and user.id != 379153719180394498:
+            if user is not None and user.id != self.bot.id:
                 user = ctx.guild.get_member(user.id)
                 embed = discord.Embed(
                     title=f"{ctx.author.display_name} kisses {user.display_name} <3"
                 )
-            elif user.id == 379153719180394498:
+            elif user.id == self.bot.id:
                 embed = discord.Embed(title="I-It's not like I like you or anything!")
         embed.set_image(url=gif)
         embed.colour = discord.Color.red()
@@ -360,12 +353,12 @@ class Fun(KatCog):
                 title=f"{ctx.author.display_name} holds everyones hand"
             )
         else:
-            if user is not None and user.id != 379153719180394498:
+            if user is not None and user.id != self.bot.id:
                 user = ctx.guild.get_member(user.id)
                 embed = discord.Embed(
                     title=f"{ctx.author.display_name} holds hands with {user.display_name}"
                 )
-            elif user.id == 379153719180394498:
+            elif user.id == self.bot.id:
                 embed = discord.Embed(title="I-It's not like I like you or anything!")
         embed.set_image(url=gif)
         embed.colour = discord.Color.red()
@@ -405,16 +398,17 @@ class Fun(KatCog):
         await ctx.send(last_message)
 
         # Cock counter for omegle
+
     @commands.command(aliases=["cc"])
     async def cockcounter(self, ctx, arg=None):
         """Keep track of cocks seen during omegle ($cockcounter)"""
         guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
-        cock_highscore = guild.ensure_setting("fun.cocks", 0)
+        cock_highscore = guild.ensure_setting(constants.GuildSettings.fun_counter, 0)
 
         if arg is None:
             self.cocks += 1
             if self.cocks > cock_highscore:
-                guild.set_setting("fun.cocks", cock_highscore + 1)
+                guild.set_setting(constants.GuildSettings.fun_counter, cock_highscore + 1)
                 cock_highscore += 1
                 gif = await self._get_gif("celebrate")
 
@@ -423,7 +417,7 @@ class Fun(KatCog):
                 embedHighscore = discord.Embed()
                 embedHighscore.title = "NEW COCK HIGHSCORE"
                 embedHighscore.description = " "
-                embedHighscore.color = 3092790
+                embedHighscore.color = constants.Color.invisible
                 embedHighscore.set_image(url=gif)
                 await ctx.send(embed=embedHighscore)
 
@@ -431,13 +425,15 @@ class Fun(KatCog):
             self.cocks = 0
         elif arg == "reset":
             self.cocks = 0
-            guild.set_setting("fun.cocks", 0)
+            guild.set_setting(constants.GuildSettings.fun_counter, 0)
             cock_highscore = 0
 
         embed = discord.Embed()
         embed.title = "Official Cock Counter"
-        embed.description = "Current Amount of cocks: {}\n" \
-                            "Current Highscore: {}".format(self.cocks, cock_highscore)
+        embed.description = (
+            "Current Amount of cocks: {}\n"
+            "Current Highscore: {}".format(self.cocks, cock_highscore)
+        )
         embed.color = 15843965
         await ctx.send(embed=embed)
 

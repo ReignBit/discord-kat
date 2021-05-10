@@ -1,4 +1,0 @@
-{
-    "test_key": "test_value",
-    "embedded_dict": {"test": 1, "not_in": true}
-}
