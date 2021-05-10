@@ -155,7 +155,7 @@ class Translate(KatCog):
                     await ctx.send("Already in English!")
                     return
                 # was given an invalid language to translate into to / from
-                if b"INVALID TARGET LANGUAGE" in result:
+                if "INVALID TARGET LANGUAGE" in result:
                     await ctx.send(
                         "Invalid language! For a full list of available languages, "
                         "do `$translate list`"

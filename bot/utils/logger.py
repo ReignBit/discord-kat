@@ -2,18 +2,54 @@
 
 Includes Windows and Linux supported terminal colors and writing to log files.
 """
-
-from logging import getLoggerClass, addLevelName, setLoggerClass, NOTSET
+from pathlib import Path
+from logging import getLoggerClass, setLoggerClass, addLevelName, NOTSET
 import logging
 import colorama
 import os
-import sys
+
+from bot.utils.extensions import compress_file
+from bot.utils import constants
+
 
 colorama.init()
 
+
+def _clean_logs():
+    """ Archives the last latest.log and gets it ready for this instance's logging"""
+    if "logs" not in os.listdir():
+        os.mkdir("logs")
+
+    if "latest.log" in os.listdir("logs"):
+        date = ""
+        first_line = ""
+        # open the latest log file
+        with open("logs/latest.log", "r") as f:
+            first_line = f.readline()
+        # extract the date and time from the first entry (would be approx. boot time)
+        date = first_line.split("]")[0][1:]  # DD-MM-YY HH:MM:SS
+        date = date.replace(":", "-").replace(" ", "_")
+
+        # TODO: Tidy this up, maybe change where we load the config to avoid loading config twice
+        if constants.Logger.compress:
+            # take the contents of latest.log and compress them to a new gzip file.
+            with open("logs/{}.log.gz".format(date), "wb") as f:
+                f.write(compress_file("logs/latest.log"))
+        else:
+            os.rename("logs/latest.log", "logs/{}.log".format(date))
+        # delete latest.log ready for new log
+        os.remove("logs/latest.log")
+
+        # remove archived logs that are less than 1024 bytes.
+        for f in os.listdir("logs"):
+            if f.endswith(".gz") and Path("logs/" + f).stat().st_size < 1024:
+                os.remove("logs/" + f)
+
+
 def get_logger(name):
-    logging.setLoggerClass(MyLogger)
+    setLoggerClass(MyLogger)
     if name == "__main__":
+        _clean_logs()
         name = "Kat"
 
     logger = logging.getLogger(name)
@@ -110,7 +146,7 @@ class MyFileHandler(logging.Handler):
             fh.close()
 
             return True
-        except:
+        except IOError:
             return False
 
 
@@ -141,11 +177,11 @@ class CustomFormatter(logging.Formatter):
     fmt = " [%(name)s] : %(message)s"
 
     FORMATS = {
-        logging.DEBUG: aqua + "[%(asctime)s] [DBUG]" + fmt + "(%(filename)s:%(lineno)d)" + reset,
-        logging.INFO: grey + "[%(asctime)s] [%(levelname)s]" + fmt + reset,
-        logging.WARNING: yellow + "[%(asctime)s] [WARN]" + fmt + "(%(filename)s:%(lineno)d)" + reset,
-        logging.ERROR: red + "[%(asctime)s] [EXCP]" + fmt + "(%(filename)s:%(lineno)d)" + reset,
-        logging.CRITICAL: bold_red + "[%(asctime)s] [CRIT]" + fmt + "(%(filename)s:%(lineno)d)" + reset,
+        logging.DEBUG: f"{aqua}[%(asctime)s] [DBUG]{fmt}(%(filename)s:%(lineno)d){reset}",
+        logging.INFO: f"{grey}[%(asctime)s] [%(levelname)s]{fmt}{reset}",
+        logging.WARNING: f"{yellow}[%(asctime)s] [WARN]{fmt}(%(filename)s:%(lineno)d){reset}",
+        logging.ERROR: f"{red}[%(asctime)s] [EXCP]{fmt}(%(filename)s:%(lineno)d){reset}",
+        logging.CRITICAL: f"{bold_red}[%(asctime)s] [CRIT]{fmt}(%(filename)s:%(lineno)d){reset}",
         READY: Color.GREEN + fmt + reset
     }
 

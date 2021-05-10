@@ -1,21 +1,42 @@
 """Database model classes"""
+import datetime
 import json
 
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, BigInteger, Date, ForeignKey, TEXT
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.hybrid import hybrid_property
+from bot.utils import constants
 
 
-Base = declarative_base()
+DEFAULT_SETTINGS = {"settings": {"prefix": constants.Bot.def_prefix}}
 
 
-class KatGuild(Base):
-    """Guild information from Kat DB."""
-    __tablename__ = "guild_data"
+class Guild:
+    """Guild information from Kat API."""
 
-    guild_id = Column("guild_id", BigInteger, primary_key=True)
-    _settings = Column("guild_settings", TEXT())
+    __slots__ = "guild_id", "_settings"
+
+    def __init__(self, id, _settings: dict):
+        self.guild_id = id
+        self._settings: dict = _settings
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(data["id"], dict(data["settings"]))
+
+    @classmethod
+    async def get(cls, id, session):
+        data = await session.get("guilds/" + str(id))
+        if data[0]:
+            return cls.from_dict(data[0])
+        else:
+            return cls.from_dict({"id": id, "settings": DEFAULT_SETTINGS})
+
+    @classmethod
+    async def members(cls, id, session):
+        data = await session.get(f"guilds/{id}/members")
+        if data:
+            members = []
+            for member in data:
+                members.append(Member.from_dict(member))
+            return members
 
     @property
     def id(self):
@@ -25,31 +46,26 @@ class KatGuild(Base):
     def id(self, value):
         raise Exception("id is a read-only property!")
 
-    @hybrid_property
+    @property
     def prefix(self):
-        return self.ensure_setting("settings.prefix", "$")
+        return self.ensure_setting(constants.GuildSettings.prefix, "$")
 
     @prefix.setter
     def prefix(self, new_prefix):
-        self.set_setting("settings.prefix", new_prefix)
+        self.set_setting(constants.GuildSettings.prefix, new_prefix)
 
-    @hybrid_property
+    @property
     def settings(self):
         """Return Guild settings as a JSONDict."""
-        try:
-            _ = json.loads(self._settings)
-        except json.JSONDecodeError:
-            return {}
-        return _
+        return self._settings
 
     @settings.setter
-    def settings(self, new_settings: str):
-        """Set Guild settings as `str`."""
-        try:
-            json.loads(new_settings)
-        except json.JSONDecodeError:
-            self._settings = {}
+    def settings(self, new_settings: dict):
+        """Set Guild settings as `dict`."""
         self._settings = new_settings
+
+    async def save(self, session):
+        await session.patch("guilds/" + str(self.guild_id), self.__repr__())
 
     def get_setting(self, setting_key):
         """Gets the value at `setting_key`. If it doesn't exist then returns `None`."""
@@ -67,12 +83,12 @@ class KatGuild(Base):
 
     def set_setting(self, setting_key, value):
         """Adds/Overwrites the current `setting_key` with `value`
-            If `setting_key` doesn't exist then it is created.
+        If `setting_key` doesn't exist then it is created.
 
-            Returns `value`.
+        Returns `value`.
         """
         _lst = self.settings
-        self._nested_set(_lst, setting_key.split('.'), value)
+        self._nested_set(_lst, setting_key.split("."), value)
         self.settings = json.dumps(_lst)
         return value
 
@@ -82,24 +98,45 @@ class KatGuild(Base):
         dic[keys[-1]] = value
 
     def ensure_setting(self, setting_key, value):
-        """Ensure that `setting_key` exists, if not then set's default to `value`.
-        """
+        """Ensure that `setting_key` exists, if not then set's default to `value`."""
         result = self.get_setting(setting_key)
-        if result == None:
+        if result is None:
             result = self.set_setting(setting_key, value)
         return result
 
+    def __str__(self):
+        return "<KatGuild (id={}, prefix={}, settings={})>".format(
+            self.guild_id, self.prefix, self.settings
+        )
+
     def __repr__(self):
-        return "<KatGuild (id={}, prefix={}, settings={})>".format(self.guild_id, self.prefix, self.settings)
+        # TODO: For some reason self.settings here is a str instead
+        # of a dict. I have no idea why... For now we just json.loads it.
+        return {"id": self.id, "settings": json.loads(self.settings)}
 
 
-class KatUser(Base):
-    """User information from Kat DB."""
-    __tablename__ = "user_data"
+class User:
+    """User information from Kat API."""
 
-    user_id = Column("user_id", BigInteger, primary_key=True)
-    birthday = Column(Date, default=None)
-    birthday_years = Column(Integer, default=0)
+    def __init__(self, id, birthday="None", birthday_years=0):
+        self.user_id: int = id
+        self.birthday_years: int = birthday_years
+        self.birthday = (
+            datetime.datetime.strptime(birthday, "%Y-%m-%d")
+            if birthday != "None"
+            else None
+        )
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            data["id"],
+            birthday=data.get("birthday", None),
+            birthday_years=data.get("years", 0),
+        )
+
+    def to_json(self):
+        return self.__repr__()
 
     @property
     def id(self):
@@ -109,30 +146,63 @@ class KatUser(Base):
     def id(self, value):
         raise Exception("id is a read-only property!")
 
-    def __repr__(self):
+    @classmethod
+    async def get(cls, id, session):
+        data = await session.get("users/" + str(id))
+        if data[0]:
+            return cls.from_dict(data["data"][0])
+        else:
+            return cls.from_dict({"id": id})
+
+    async def save(self, session):
+        await session.patch("users/" + str(self.user_id), self.to_json())
+
+    def __str__(self):
         return "<User (id={})>".format(self.user_id)
 
+    def __repr__(self):
+        return {
+            "id": self.user_id,
+            "birthday": self.birthday.strftime("%Y-%m-%d") if self.birthday else None,
+            "years": self.birthday_years,
+        }
 
-class KatMember(Base):
-    """ Member information from Kat DB.
 
-        `guild_id`:int  ;Guild ID of which the member belongs to
+class Member:
+    """Member information from Kat DB.
 
-        `user_id`:int   ;ID of the user of which the member belongs to
+    `guild_id`:int  ;Guild ID of which the member belongs to
 
-        `_data`:dict    ;JSON dict of member-data. (for now just includes warning system data.
+    `user_id`:int   ;ID of the user of which the member belongs to
+
+    `_data`:dict    ;JSON dict of member-data. (for now just includes warning system data.
     """
-    __tablename__ = "member_data"
 
-    guild_id = Column(BigInteger, ForeignKey('guild_data.guild_id'), primary_key=True)
-    user_id = Column(BigInteger, ForeignKey('user_data.user_id'), primary_key=True)
-    _settings = Column("data", TEXT)
+    def __init__(self, gid, uid, lvl, xp, settings=""):
+        self.guild_id = gid
+        self.user_id = uid
+        self._settings = settings
 
-    xp = Column(Integer, default=1)
-    lvl = Column(Integer, default=1)
+        self.xp = xp
+        self.lvl = lvl
 
-    user = relationship("KatUser")
-    guild = relationship("KatGuild")
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            data["gid"],
+            data["id"],
+            data.get("level", 0),
+            data.get("xp", 0),
+            data.get("settings", {}),
+        )
+
+    @classmethod
+    async def get(cls, gid, uid, session):
+        data = await session.get(f"guilds/{gid}/{uid}")
+        if data[0]:
+            return cls.from_dict(data[0])
+        else:
+            return cls.from_dict({"gid": gid, "id": uid, "level": 0, "xp": 0})
 
     @property
     def id(self):
@@ -145,27 +215,14 @@ class KatMember(Base):
     def set_xp(self, value):
         self.xp = value
 
-    ####
-
-    @hybrid_property
+    @property
     def settings(self):
         """Return Guild settings as a JSONDict."""
-        try:
-            _ = json.loads(self._settings)
-        except json.JSONDecodeError:
-            return {}
-        except TypeError:
-            return {}
-
-        return _
+        return self._settings
 
     @settings.setter
-    def settings(self, new_settings: str):
+    def settings(self, new_settings: dict):
         """Set Guild settings as `str`."""
-        try:
-            json.loads(new_settings)
-        except json.JSONDecodeError:
-            self._settings = {}
         self._settings = new_settings
 
     def get_setting(self, setting_key):
@@ -184,12 +241,12 @@ class KatMember(Base):
 
     def set_setting(self, setting_key, value):
         """Adds/Overwrites the current `setting_key` with `value`
-            If `setting_key` doesn't exist then it is created.
+        If `setting_key` doesn't exist then it is created.
 
-            Returns `value`.
+        Returns `value`.
         """
         _lst = self.settings
-        self._nested_set(_lst, setting_key.split('.'), value)
+        self._nested_set(_lst, setting_key.split("."), value)
         self.settings = json.dumps(_lst)
         return value
 
@@ -199,12 +256,25 @@ class KatMember(Base):
         dic[keys[-1]] = value
 
     def ensure_setting(self, setting_key, value):
-        """Ensure that `setting_key` exists, if not then set's default to `value`.
-        """
+        """Ensure that `setting_key` exists, if not then set's default to `value`."""
         result = self.get_setting(setting_key)
-        if result == None:
+        if result is None:
             result = self.set_setting(setting_key, value)
         return result
 
+    async def save(self, session):
+        await session.patch(f"guilds/{self.guild_id}/{self.user_id}", self.__repr__())
+
+    def __str__(self):
+        return "<Member (guild_id={}, user_id={}, (xp={},lvl={}))>".format(
+            self.guild_id, self.user_id, self.xp, self.lvl
+        )
+
     def __repr__(self):
-        return "<Member (guild_id={}, user_id={}, (xp={},lvl={}))>".format(self.guild_id, self.user_id, self.xp, self.lvl)
+        return {
+            "id": self.user_id,
+            "gid": self.guild_id,
+            "level": self.lvl,
+            "xp": self.xp,
+            "settings": self.settings,
+        }

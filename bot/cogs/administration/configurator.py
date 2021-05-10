@@ -2,8 +2,8 @@ from discord.ext import commands
 import discord
 
 from bot.utils.extensions import KatCog
-from bot.utils.models import KatGuild
-from bot.utils.constants import GuildSettings, Color
+from bot.utils.models import Guild
+from bot.utils import constants
 
 
 def is_subcommand():
@@ -19,7 +19,7 @@ class Configurator(KatCog):
 
     def _config_embed_builder(self, ctx, command_path, fields, cog_name="Kat"):
         embed = discord.Embed()
-        embed.color = Color.invisble
+        embed.color = constants.Color.invisible
         embed.set_author(name="{} Config for {}".format(cog_name, ctx.guild.name))
         embed.set_footer(
             text="Use `{}` to view and change settings.".format(
@@ -58,9 +58,11 @@ class Configurator(KatCog):
         if ctx.invoked_subcommand is not None:
             return
 
-        roles = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id).settings[
-            "roles"
-        ]
+        guild = await Guild.get(ctx.guild.id, self.bot.session)
+        roles = guild.get_setting("roles")
+        self.log.debug(roles)
+        self.log.debug(type(roles))
+
         mod_roles = []
         admin_roles = []
 
@@ -104,26 +106,28 @@ class Configurator(KatCog):
             )
         )
 
-    def _add_to_moderator(self, role: discord.Role, guild: KatGuild):
-        mods = guild.get_setting(GuildSettings.roles_moderators)
+    def _add_to_moderator(self, role: discord.Role, guild: Guild):
+        mods = guild.get_setting(constants.GuildSettings.moderators)
         mods.append(role.id)
-        guild.set_setting(GuildSettings.roles_moderators, mods)
+        guild.set_setting(constants.GuildSettings.moderators, mods)
 
-    def _add_to_admin(self, role: discord.Role, guild: KatGuild):
-        mods = guild.get_setting(GuildSettings.roles_admins)
+    def _add_to_admin(self, role: discord.Role, guild: Guild):
+        mods = guild.get_setting(constants.GuildSettings.admins)
         mods.append(role.id)
-        guild.set_setting(GuildSettings.roles_admins, mods)
+        guild.set_setting(constants.GuildSettings.admins, mods)
 
     @roles.command()
     async def add(self, ctx, role: discord.Role, group: str):
         self.log.debug("add")
         self.log.debug(role.name)
-        guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
+        guild = await Guild.get(ctx.guild.id, self.bot.session)
 
         if group == "mod":
             self._add_to_moderator(role, guild)
         elif group == "admin":
             self._add_to_admin(role, guild)
+
+        await guild.save(self.bot.session)
 
         await ctx.send(
             "Set {} to {}".format(
@@ -138,14 +142,19 @@ class Configurator(KatCog):
             await ctx.send(
                 self.get_response(
                     "configurator.command.prefix_none",
-                    curr_prefix=self.bot.get_custom_prefix(self.bot, ctx)[2],
+                    curr_prefix=(await self.bot.get_custom_prefix(self.bot, ctx))[2],
                 )
             )
         else:
-            if new_prefix not in self.settings.get("banned_prefix_chars"):
+            if new_prefix not in constants.Configurator.banned_prefix_chars:
                 # [name_mention, nickname_mention, prefix]
-                old = self.bot.get_custom_prefix(self.bot, ctx)[2]
-                self.sql.edit_prefix(ctx.guild.id, new_prefix)
+                old = (await self.bot.get_custom_prefix(self.bot, ctx))[2]
+                guild = await Guild.get(ctx.guild.id, self.bot.session)
+                self.log.debug(type(guild.settings))
+                guild.prefix = new_prefix
+
+                self.log.debug(guild.__repr__())
+                await guild.save(self.bot.session)
 
                 await ctx.send(
                     self.get_response(
@@ -166,15 +175,16 @@ class Configurator(KatCog):
         if ctx.invoked_subcommand is not None:
             return
 
-        guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
+        guild = await Guild.get(ctx.guild.id, self.bot.session)
         fields = [
             (
                 ":eight_spoked_asterisk:  XP Multiplier: "
-                f"{guild.ensure_setting(GuildSettings.level_xp_multi, 1.0)}",
+                f"{guild.ensure_setting(constants.GuildSettings.level_xp_multi, 1.0)}",
                 "multi <float>",
             ),
             (
-                f":snowflake: Freeze Status: {guild.ensure_setting(GuildSettings.level_freeze, False)}",
+                f":snowflake: Freeze Status: \
+                {guild.ensure_setting(constants.GuildSettings.level_freeze, False)}",
                 "freeze",
             ),
         ]
@@ -183,11 +193,12 @@ class Configurator(KatCog):
 
     @level.command()
     async def freeze(self, ctx):
-        guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
+        guild = await Guild.get(ctx.guild.id, self.bot.session)
         new = guild.set_setting(
-            GuildSettings.level_freeze,
-            not guild.get_setting(GuildSettings.level_freeze),
+            constants.GuildSettings.level_freeze,
+            not guild.get_setting(constants.GuildSettings.level_freeze),
         )
+        await guild.save(self.bot.session)
         if new:
             await ctx.send(self.get_response("configurator.config.level.freeze"))
         else:
@@ -197,8 +208,9 @@ class Configurator(KatCog):
     async def multi(self, ctx, mul: float):
         mul = min(max(0.0, mul), 2.5)
 
-        guild = self.sql.ensure_exists("KatGuild", guild_id=ctx.guild.id)
-        guild.set_setting(GuildSettings.level_xp_multi, mul)
+        guild = await Guild.get(ctx.guild.id, self.bot.session)
+        guild.set_setting(constants.GuildSettings.level_xp_multi, mul)
+        await guild.save(self.bot.session)
         await ctx.send(
             self.get_response("configurator.config.level.multi_success", multi=mul)
         )
