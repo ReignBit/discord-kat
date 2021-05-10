@@ -5,6 +5,7 @@ from discord.ext import commands
 import discord
 
 from bot.utils.extensions import KatCog
+import bot.utils.constants as constants
 
 
 class FailedToFindServiceException(Exception):
@@ -21,9 +22,9 @@ class Orwell(KatCog):
         self.voters = 0
         self.total_voters = 3
 
-        self.user = self.settings.get("user")
-        self.paswd = self.settings.get("pass")
-        self.host = self.settings.get("apihost")
+        self.host = constants.Orwell.host
+        self.user = constants.Orwell.user
+        self.paswd = constants.Orwell.paswd
 
     def is_role(self, ctx):
         roles = self.settings.get("allowed_roles")
@@ -31,11 +32,8 @@ class Orwell(KatCog):
         if ctx.author.id == self.bot.app_info.owner.id:
             return True
 
-        # Redundant check for owner incase app_info fails to populate for some reason.
-        if ctx.author.id == 277438017692762112:
-            return True
-
-        # Check if author has any of the roles, or if their userID matches.
+        # Check if author has any of the roles,
+        # or if their userID matches.
         for role in roles:
             self.log.debug(role)
             self.log.debug(ctx.author.id)

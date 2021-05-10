@@ -21,6 +21,9 @@ home_guilds:
     # Used for private things
     - 0000000000000
 
+  channels:
+    - 0000000000000
+
 logger:
   compress: 1
   level: 0
@@ -48,7 +51,6 @@ cogs:
     paswd: "PASSWORD"
     allowed_roles:
       - 000000000000000000
-
 
   milsim:
     op_name: "Latest operation name here"

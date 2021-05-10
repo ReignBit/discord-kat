@@ -161,9 +161,9 @@ class Kat(commands.Bot):
 
         self.is_first_boot = 0
 
-        self.sql.purge_unguilded_users()
-        for guild in self.guilds:
-            self.sql.ensure_exists("KatGuild", guild_id=guild.id)
+        # self.sql.purge_unguilded_users()
+        # for guild in self.guilds:
+        #     self.sql.ensure_exists("KatGuild", guild_id=guild.id)
 
     def setup_events(self):
         if not self.is_first_boot:

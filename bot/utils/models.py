@@ -5,11 +5,7 @@ import json
 from bot.utils import constants
 
 
-DEFAULT_SETTINGS = {
-    "settings": {
-        "prefix": constants.Bot.def_prefix
-    }
-}
+DEFAULT_SETTINGS = {"settings": {"prefix": constants.Bot.def_prefix}}
 
 
 class Guild:
@@ -17,13 +13,13 @@ class Guild:
 
     __slots__ = "guild_id", "_settings"
 
-    def __init__(self, id, _settings):
+    def __init__(self, id, _settings: dict):
         self.guild_id = id
-        self._settings = _settings
+        self._settings: dict = _settings
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(data["id"], data["settings"])
+        return cls(data["id"], dict(data["settings"]))
 
     @classmethod
     async def get(cls, id, session):
@@ -68,6 +64,9 @@ class Guild:
         """Set Guild settings as `dict`."""
         self._settings = new_settings
 
+    async def save(self, session):
+        await session.patch("guilds/" + str(self.guild_id), self.__repr__())
+
     def get_setting(self, setting_key):
         """Gets the value at `setting_key`. If it doesn't exist then returns `None`."""
         _path = setting_key.split(".")
@@ -111,7 +110,9 @@ class Guild:
         )
 
     def __repr__(self):
-        return {"id": self.id, "settings": self.settings}
+        # TODO: For some reason self.settings here is a str instead
+        # of a dict. I have no idea why... For now we just json.loads it.
+        return {"id": self.id, "settings": json.loads(self.settings)}
 
 
 class User:

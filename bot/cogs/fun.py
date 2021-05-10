@@ -64,11 +64,9 @@ class Fun(KatCog):
     def _generate_generic_embed(self, ctx, gif, action, user: discord.User = None):
         responses = {
             "everyone": f"performs {action} to everyone!",
-            "user": "performs "+action+" to {user.display_name} O.o",
+            "user": "performs " + action + " to {user.display_name} O.o",
             "self": f"performs {action} to me!? :flushed:",
         }
-
-        self.log.debug(user)
         return self._generate_specific_embed(ctx, gif, responses, user, constants.Color.soft_red)
 
     def _generate_specific_embed(
@@ -91,7 +89,7 @@ class Fun(KatCog):
             if user is not None and user.id != self.bot.id:
                 user = ctx.guild.get_member(user.id)
                 embed = discord.Embed(
-                    title=f"{ctx.author.display_name} " + responses["user"].format(user)
+                    title=f"{ctx.author.display_name} " + responses['user'].format(user=user)
                 )
             elif user.id == self.bot.id:
                 embed = discord.Embed(title=responses["self"])
@@ -106,8 +104,8 @@ class Fun(KatCog):
             return
 
         try:
-            guild = discord.utils.get(self.bot.guilds, id=constants.HomeGuild.reign_guild_id)
-            channel = discord.utils.get(guild.channels, id=constants.HomeGuild.rm_chat_channel)
+            guild = discord.utils.get(self.bot.guilds, id=constants.HomeGuild.ids[0])
+            channel = discord.utils.get(guild.channels, id=constants.HomeGuild.channels[0])
         except AttributeError:
             # we mustn't be able to see Reign guild
             self.bot.run_day_check = False
@@ -182,7 +180,7 @@ class Fun(KatCog):
 
         responses = {
             "everyone": "noms everyone!",
-            "user": "takes a nibble of {user.display_name} tasty!",
+            "user": "takes a nibble of {user.display_name}, tasty!",
             "self": "D-do I taste good?",
         }
 

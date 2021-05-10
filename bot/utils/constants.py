@@ -53,7 +53,7 @@ class YAMLGetter(type):
                 (cls.section, cls.subsection, name)
                 if cls.subsection is not None else(cls.section, name)
                 )
-            log.critical(f"Tried to access config variable at `{path}`, but could not be found")
+            log.critical(f"Tried to access config variable at `{path}`, but could not be found!")
 
     def __getitem__(cls, name):
         return cls.__getattr__(name)
@@ -78,6 +78,7 @@ class HomeGuild(metaclass=YAMLGetter):
     section = "home_guilds"
 
     ids: List[int]
+    channels: List[int]
 
 
 class Logger(metaclass=YAMLGetter):
