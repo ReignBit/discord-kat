@@ -37,7 +37,6 @@ class Guild:
             for member in data:
                 m = Member.from_dict(member)
                 members.append(m)
-                print(m)
             return members
 
     @property
