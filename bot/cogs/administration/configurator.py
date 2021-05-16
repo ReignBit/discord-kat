@@ -153,7 +153,7 @@ class Configurator(KatCog):
                 self.log.debug(type(guild.settings))
                 guild.prefix = new_prefix
 
-                self.log.debug(guild.__repr__())
+                self.log.debug(guild.to_dict())
                 await guild.save(self.bot.session)
 
                 await ctx.send(

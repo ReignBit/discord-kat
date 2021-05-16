@@ -35,7 +35,9 @@ class Guild:
         if data:
             members = []
             for member in data:
-                members.append(Member.from_dict(member))
+                m = Member.from_dict(member)
+                members.append(m)
+                print(m)
             return members
 
     @property
@@ -65,7 +67,7 @@ class Guild:
         self._settings = new_settings
 
     async def save(self, session):
-        await session.patch("guilds/" + str(self.guild_id), self.__repr__())
+        await session.patch("guilds/" + str(self.guild_id), self.to_dict())
 
     def get_setting(self, setting_key):
         """Gets the value at `setting_key`. If it doesn't exist then returns `None`."""
@@ -109,7 +111,7 @@ class Guild:
             self.guild_id, self.prefix, self.settings
         )
 
-    def __repr__(self):
+    def to_dict(self):
         # TODO: For some reason self.settings here is a str instead
         # of a dict. I have no idea why... For now we just json.loads it.
         return {"id": self.id, "settings": json.loads(self.settings)}

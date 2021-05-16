@@ -67,7 +67,6 @@ class Level(KatCog):
 
     # The function that adds xp to user and calculates new levels.
     async def give_xp(self, message):
-
         member = await Member.get(message.guild.id, message.author.id, self.bot.session)
         curr_xp = member.xp
         curr_level = member.lvl
@@ -121,25 +120,13 @@ class Level(KatCog):
     @commands.command()
     async def leaderboard(self, ctx):
         """Shows the guild's top 10 users with the most XP"""
-        return await ctx.send("Leaderboards currently WIP")
-        leaders = (
-            Guild.members(ctx.guild.id, self.bot.session).sort_by("xp")
-        )
-        self.log.debug(leaders)
+        leaders = await Guild.members(ctx.guild.id, self.bot.session)
+        leaders.sort(key=lambda x: x.xp, reverse=True)
 
         try:
             string = "\n\n**Username  |  Level  |   XP**    \n"
-            for leader in leaders.copy():
-                try:
-                    username = ctx.guild.get_member(leader.user_id).display_name
-                except AttributeError:
-                    # Here we delete the user if we can't see them.
-                    # However im unsure how this would work with +100 servers.
-                    self.log.info(
-                        "Deleting user_id {} from the DB.".format(leader.user_id)
-                    )
-                    self.sql.query("KatUser").filter_by(user_id=leader.user_id).delete()
-                    leaders.pop(leaders.index(leader))
+            for leader in leaders[:10]:
+                username = ctx.guild.get_member(leader.user_id).display_name
 
                 string += "{}. {}   |   `{}`/`{}`\n".format(
                     leaders.index(leader) + 1, username, leader.lvl, leader.xp
