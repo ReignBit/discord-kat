@@ -42,7 +42,7 @@ class Misc(KatCog):
         if reason is None or reason == "" or len(reason) == 0:
             reason = ["No", "Reason."]
 
-        await ctx.guild.kick(member, reason=reason)
+        await ctx.guild.kick(member, reason=" ".join(reason))
         await ctx.send(
             self.get_response(
                 "misc.command.kick",
@@ -59,7 +59,7 @@ class Misc(KatCog):
         if reason is None or reason == "":
             reason = ["No", "Reason."]
 
-        await ctx.guild.ban(member, reason=reason, delete_message_days=0)
+        await ctx.guild.ban(member, reason=" ".join(reason), delete_message_days=0)
         await ctx.send(
             self.get_response(
                 "misc.command.ban",
@@ -78,7 +78,7 @@ class Misc(KatCog):
         if reason is None or reason == "":
             reason = ["No", "Reason."]
 
-        await ctx.guild.ban(member, reason=reason, delete_message_days=7)
+        await ctx.guild.ban(member, reason=" ".join(reason), delete_message_days=7)
         await ctx.send(
             self.get_response(
                 "misc.command.purge",
