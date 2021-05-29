@@ -39,6 +39,17 @@ class Guild:
                 members.append(m)
             return members
 
+    @classmethod
+    async def leaderboard(cls, id, session, limit=10):
+        data = await session.get(f"guilds/{id}/leaderboard?limit={limit}")
+        if data:
+            members = []
+            for member in data:
+                m = Member.from_dict(member)
+                members.append(m)
+            return members
+
+
     @property
     def id(self):
         return self.guild_id

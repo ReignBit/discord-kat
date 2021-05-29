@@ -120,12 +120,11 @@ class Level(KatCog):
     @commands.command()
     async def leaderboard(self, ctx):
         """Shows the guild's top 10 users with the most XP"""
-        leaders = await Guild.members(ctx.guild.id, self.bot.session)
-        leaders.sort(key=lambda x: x.xp, reverse=True)
+        leaders = await Guild.leaderboard(ctx.guild.id, self.bot.session)
 
         try:
             string = "\n\n**Username  |  Level  |   XP**    \n"
-            for leader in leaders[:10]:
+            for leader in leaders:
                 username = ctx.guild.get_member(leader.user_id).display_name
 
                 string += "{}. {}   |   `{}`/`{}`\n".format(
@@ -134,7 +133,7 @@ class Level(KatCog):
         except Exception as e:
             self.log.exception(e)
 
-        embed = discord.Embed(color=1233827)
+        embed = discord.Embed(color=constants.Color.soft_green)
         embed.set_author(
             name=f"Level Leaderboards for {ctx.guild.name}", icon_url=ctx.guild.icon_url
         )
