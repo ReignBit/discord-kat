@@ -87,6 +87,12 @@ cogs:
     key: "GO DADDY API KEY"
     domain: "DOMAIN RECORD TO UPDATE"
 
+  mutealert:
+    suppress_time: 600
+    ids:
+      - 00000000000000000
+
+
 event_manager:
   max_event_timer: 86400
   debug: 1

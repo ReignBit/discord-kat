@@ -161,6 +161,14 @@ class Dyndns(metaclass=YAMLGetter):
     domain: str
 
 
+class Mutealert(metaclass=YAMLGetter):
+    section = "cogs"
+    subsection = "mutealert"
+
+    suppress_time: int
+    ids: List[int]
+
+
 class EventManager(metaclass=YAMLGetter):
     section = "event_manager"
 
