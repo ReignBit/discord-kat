@@ -13,7 +13,7 @@ class MuteAlert(KatCog):
 
         self.suppress_list = {}
 
-        self.bot.loop.create_background_task(self.background_check)
+        self.bot.loop.run_until_complete(self.background_check())
 
     async def background_check(self):
         for member in constants.Mutealert.ids:
