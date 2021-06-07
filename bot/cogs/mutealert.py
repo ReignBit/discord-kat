@@ -29,7 +29,7 @@ class MuteAlert(KatCog):
                 if obj_member.voice:
                     if obj_member.self_mute:
                         member.send(":bell: You are muted! This will repeat every **5 seconds**. To suppress these notifications for 1 hour, in the server, type `$suppress`")
-        asyncio.sleep(5)
+        await asyncio.sleep(5)
 
     @commands.command
     async def suppress(self, ctx):
