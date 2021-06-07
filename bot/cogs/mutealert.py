@@ -28,7 +28,8 @@ class MuteAlert(KatCog):
                 obj_member = discord.utils.get(discord.utils.get(self.bot.guilds, id=constants.HomeGuild.ids[0]), id=member)
                 if obj_member.voice:
                     if obj_member.self_mute:
-                        member.send(":bell: You are muted! This will repeat every **5 seconds**. To suppress these notifications for 1 hour, in the server, type `$suppress`")
+                        self.log.info("Sending mute noti to: " + obj_member.id)
+                        await obj_member.send(":bell: You are muted! This will repeat every **5 seconds**. To suppress these notifications for 1 hour, in the server, type `$suppress`")
         await asyncio.sleep(5)
 
     @commands.command
