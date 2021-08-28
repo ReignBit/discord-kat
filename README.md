@@ -1,5 +1,12 @@
 # Kat Discord Bot (Version 3.2.5_h2)
 
+### No longer being actively maintained
+Due to Discord.py being discontinued, and with the uncertainty of the Discord API in 2022, I have decided to stop development on Kat for the foreseeable future. Changing to the new Slash commands, which Discord is trying to force bots to use, would require a complete rewrite of Kat - something I don't want to do for the 3rd time. Although, in the future I may create a new bot if the need arises.
+
+Kat may work after April 2022, but there is no guarantee - Any Discord API update in the future could break functionality.
+
+
+
 ![master](https://github.com/ReignBit/discord-kat/workflows/test-units/badge.svg?branch=master)
 
 A customizable administration bot originally designed for Reign Network, complete with an interactive webpanel for easy configuring for user's guilds.
