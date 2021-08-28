@@ -114,17 +114,17 @@ class Fun(KatCog):
         self.log.info("Daily check started.")
         date = datetime.datetime.today()
 
-        if date.weekday() == 0:  # is monday
+        if date.weekday():  # is monday
             if "megu_done" not in os.listdir("bot/resources/days/"):
                 await channel.send(
                     self.dayresponse[0], file=discord.File("bot/resources/days/0.png")
                 )
 
-                write_resource("days/megu_done", 1)
+                write_resource("days/megu_done", "1")
                 self.log.info("It's megumonday!")
         else:
             try:
-                os.remove("resources/days/megu_done")
+                os.remove("bot/resources/days/megu_done")
             except FileNotFoundError:
                 pass
 
