@@ -2,7 +2,7 @@
 
 ==========================================================================
 ### No longer being actively maintained
-Due to Discord.py being discontinued, and with the uncertainty of the Discord API in 2022, I have decided to stop development on Kat for the foreseeable future. Changing to the new Slash commands, which Discord is trying to force bots to use, would require a complete rewrite of Kat - something I don't want to do for the 3rd time.
+Due to Discord.py being discontinued, and with the uncertainty of the Discord API in 2022, I have decided to stop development on Kat for the foreseeable future. Changing to the new Slash commands, which Discord is trying to force bots to use, or trying to hamfist a new library into this project, would require a complete rewrite of Kat - something I don't want to do for the 3rd time.
 
 Although, in the future, I may create a totally new bot with knowledge learned from Kat if the need arises.
 
