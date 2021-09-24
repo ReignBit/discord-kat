@@ -282,14 +282,14 @@ class Voice(KatCog):
     @commands.command()
     async def exportqueue(self, ctx):
         async with ctx.typing():
-            with open(str(ctx.guild.id) + ".json", "wb") as f:
+            with open(str(ctx.guild.id) + ".katq", "wb") as f:
                 f.write(json.dumps(self.queues[ctx.guild.id].to_json(), indent=4).encode("utf-8"))
                 pass
             
-            with open(str(ctx.guild.id) + ".json", "rb") as f:
+            with open(str(ctx.guild.id) + ".katq", "rb") as f:
                 await ctx.send(f"Current queue has been exported! Use `{ctx.prefix}load` with this file to load the queue.", file=discord.File(f))
             
-            os.remove(str(ctx.guild.id) + ".json")
+            os.remove(str(ctx.guild.id) + ".katq")
 
 
     #TODO: Load queues
