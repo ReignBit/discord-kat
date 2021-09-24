@@ -1,6 +1,8 @@
 import asyncio
-from discord import player
+import json
+import os
 
+from discord import player
 from discord.ext import commands
 import discord
 from discord.guild import Guild
@@ -30,6 +32,7 @@ ffmpeg_options = {
 }
 
 class GuildQueueItem:
+    __slots__ = "url", "requester", "title", "webpage_url", "duration", "data"
     def __init__(self, url, requester, title, data=None):
         
         if data.get("entries"):
@@ -46,6 +49,9 @@ class GuildQueueItem:
         self.webpage_url = self.data['webpage_url']
         self.duration = self.data.get('duration', '???')
     
+    def to_json(self):
+        return {'url':self.url, 'requester':self.requester.id, 'title': self.title, 'webpage_url': self.webpage_url, 'duration': self.duration}
+
     @classmethod
     async def from_url(cls, url, requester=None):
         data = await asyncio.get_event_loop().run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
@@ -64,6 +70,12 @@ class GuildQueue:
     def pop(self):
         self.now_playing = self.queue[0]
         return self.queue.pop(0)
+    
+    def to_json(self):
+        o = []
+        for track in self.queue:
+            o.append(track.to_json())
+        return {'guild': self.guild.id, 'now_playing': self.now_playing.to_json(), 'is_stopped': self.is_stopped, 'tracks': o}
 
 
 class StreamSource(discord.PCMVolumeTransformer):
@@ -112,6 +124,7 @@ class Voice(KatCog):
         if ctx.guild.voice_client.channel != ctx.author.voice.channel:
             await ctx.send("You must be in the same room as Kat to use this command!")
             return False
+        return True
         
 
     async def _after_play(self, error, ctx):
@@ -265,6 +278,22 @@ class Voice(KatCog):
         if ctx.guild.voice_client.is_playing():
             ctx.guild.voice_client.stop()
             await ctx.send(":track_next: Skipping current song!")
+
+    @commands.command()
+    async def exportqueue(self, ctx):
+        async with ctx.typing():
+            with open(str(ctx.guild.id) + ".json", "wb") as f:
+                f.write(json.dumps(self.queues[ctx.guild.id].to_json(), indent=4).encode("utf-8"))
+                pass
+            
+            with open(str(ctx.guild.id) + ".json", "rb") as f:
+                await ctx.send(f"Current queue has been exported! Use `{ctx.prefix}load` with this file to load the queue.", file=discord.File(f))
+            
+            os.remove(str(ctx.guild.id) + ".json")
+
+
+    #TODO: Load queues
+
 
     def cog_unload(self):
         for q in self.bot.guilds:
