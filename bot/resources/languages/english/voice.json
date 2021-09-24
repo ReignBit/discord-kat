@@ -8,7 +8,7 @@
         },
         "no_queue": {
             "color": 3092790,
-            "description": "There is currently no songs in the queue, add a song with ${prefix}play"
+            "description": "There are currently no songs in the queue, add a song with ${prefix}play"
         }
     }
 }

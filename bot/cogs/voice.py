@@ -281,6 +281,10 @@ class Voice(KatCog):
 
     @commands.command()
     async def exportqueue(self, ctx):
+        if not self.queues.get(ctx.guild.id):
+            await ctx.send(embed=discord.Embed.from_dict(self.get_embed("voice.embeds.no_queue", prefix=ctx.prefix)))
+            return
+
         async with ctx.typing():
             with open(str(ctx.guild.id) + ".katq", "wb") as f:
                 f.write(json.dumps(self.queues[ctx.guild.id].to_json(), indent=4).encode("utf-8"))
