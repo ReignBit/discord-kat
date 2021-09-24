@@ -44,7 +44,7 @@ class GuildQueueItem:
         
 
         self.webpage_url = self.data['webpage_url']
-        self.duration = self.data['duration']
+        self.duration = self.data.get('duration', '???')
     
     @classmethod
     async def from_url(cls, url, requester=None):
@@ -55,6 +55,7 @@ class GuildQueue:
     def __init__(self, guild):
         self.guild = guild
         self.now_playing = None
+        self.is_stopped = False
         self.queue = []
     
     def add(self, item):
@@ -84,7 +85,6 @@ class StreamSource(discord.PCMVolumeTransformer):
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data, volume=volume)
 
-
 class Voice(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
@@ -97,6 +97,23 @@ class Voice(KatCog):
     #         self.players[ctx.guild.id] = await ctx.author.voice.channel.connect()
     #         await ctx.send("Connected!")
 
+    async def check_voice_status(self, ctx):
+        # If author no voice
+        # If have voice and author have diff voice channel
+        
+        if not ctx.author.voice:
+            await ctx.send("You must be connected to a voice channel to use this command!")
+            return False
+        
+        if not ctx.guild.voice_client:
+            await ctx.author.voice.channel.connect()
+            return True
+
+        if ctx.guild.voice_client.channel != ctx.author.voice.channel:
+            await ctx.send("You must be in the same room as Kat to use this command!")
+            return False
+        
+
     async def _after_play(self, error, ctx):
         if error:
             self.log.warn(error)
@@ -104,20 +121,38 @@ class Voice(KatCog):
         if self.queues.get(ctx.guild.id):
             # The guild has a queue
             if len(self.queues[ctx.guild.id].queue) > 0:
-                guild_queue_item = self.queues[ctx.guild.id].pop()
-                source = await StreamSource.from_url(guild_queue_item.url, loop=self.bot.loop, stream=True)
-                ctx.guild.voice_client.play(source, after=lambda e: self.bot.loop.create_task(self._after_play(e, ctx)))
-            
-                now_playing = self.queues[ctx.guild.id].now_playing
-                await ctx.send(f'Now playing: {now_playing.title} - {now_playing.webpage_url} - {now_playing.requester}')
+                if not self.queues[ctx.guild.id].is_stopped:
+                    guild_queue_item = self.queues[ctx.guild.id].pop()
+                    source = await StreamSource.from_url(guild_queue_item.url, loop=self.bot.loop, stream=True)
+                    ctx.guild.voice_client.play(source, after=lambda e: self.bot.loop.create_task(self._after_play(e, ctx)))
+                
+                    now_playing = self.queues[ctx.guild.id].now_playing
+                    await ctx.send(f'Now playing: {now_playing.title} - {now_playing.webpage_url} - {now_playing.requester}')
 
             else:
                 # Queue is now empty
                 del self.queues[ctx.guild.id]
 
-
     @commands.command()
-    async def play(self, ctx, *, url):
+    async def play(self, ctx, *, url=None):
+        if await self.check_voice_status(ctx) == False:
+            return
+
+
+        if url is None and ctx.guild.voice_client.is_paused():
+            ctx.guild.voice_client.resume()
+            await ctx.send(":arrow_forward: Resuming music!")
+            return
+
+        if url is None and self.queues.get(ctx.guild.id):
+            if self.queues[ctx.guild.id].is_stopped:
+                self.queues[ctx.guild.id].is_stopped = False
+                await self._after_play(None, ctx)
+            return
+
+        if url is None:
+            await ctx.send("Missing argument! `url / search`: Video to play.")
+
         async with ctx.typing():
             item = await GuildQueueItem.from_url(url, ctx.author)
 
@@ -130,16 +165,42 @@ class Voice(KatCog):
                 self.queues[ctx.guild.id].add(item)
                 await self._after_play(None, ctx)
             else:
+                if self.queues[ctx.guild.id].is_stopped:
+                    self.queues[ctx.guild.id].is_stopped = False
+                    await self._after_play(None, ctx)
                 # Already have a queue, just add url to queue
                 self.queues[ctx.guild.id].add(item)
                 await ctx.send("Added " + item.title + " to the queue!")
+    
     @commands.command()
     async def stop(self, ctx):
+        "Stops the current song."
+        if not await self.check_voice_status(ctx):
+            return
+
         if self.queues.get(ctx.guild.id):
-            await self.queues[ctx.guild.id].voice_client.stop()
+            self.queues[ctx.guild.id].is_stopped = True
+            ctx.guild.voice_client.stop()
+            await ctx.send(":stop_button: Stopped the music!")
+
+    @commands.command()
+    async def pause(self, ctx):
+        if not await self.check_voice_status(ctx):
+            return
+        await ctx.send(":pause_button: Paused music!")
+        ctx.guild.voice_client.pause()
+
+    @commands.command()
+    async def resume(self, ctx):
+        if not await self.check_voice_status(ctx):
+            return
+        ctx.guild.voice_client.resume()
+        await ctx.send(":arrow_forward: Resuming music!")
 
     @commands.command()
     async def leave(self, ctx):
+        if not await self.check_voice_status(ctx):
+            return
         await ctx.guild.voice_client.disconnect()
 
     @commands.command(aliases=['q'])
@@ -167,6 +228,8 @@ class Voice(KatCog):
 
     @commands.command()
     async def remove(self, ctx, index: int):
+        if not await self.check_voice_status(ctx):
+            return
         if self.queues.get(ctx.guild.id):
             try:
                 item = self.queues[ctx.guild.id].queue.pop(index-1)
@@ -176,6 +239,8 @@ class Voice(KatCog):
 
     @commands.command()
     async def move(self, ctx, src: int, dest: int):
+        if not await self.check_voice_status(ctx):
+            return
         if self.queues.get(ctx.guild.id):
             if len(self.queues.get(ctx.guild.id).queue) >= src and len(self.queues.get(ctx.guild.id).queue) >= dest:
                 queue = self.queues.get(ctx.guild.id).queue
@@ -187,10 +252,19 @@ class Voice(KatCog):
 
     @commands.command()
     async def purge(self, ctx):
+        if not await self.check_voice_status(ctx):
+            return
         if self.queues.get(ctx.guild.id):
             self.queues[ctx.guild.id].queue = []
             await ctx.send("Cleared the queue!")
 
+    @commands.command()
+    async def skip(self, ctx):
+        if not await self.check_voice_status(ctx):
+            return
+        if ctx.guild.voice_client.is_playing():
+            ctx.guild.voice_client.stop()
+            await ctx.send(":track_next: Skipping current song!")
 
     def cog_unload(self):
         for q in self.bot.guilds:
