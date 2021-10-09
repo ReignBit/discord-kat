@@ -54,8 +54,17 @@ class GuildQueueItem:
 
     @classmethod
     async def from_url(cls, url, requester=None):
-        data = await asyncio.get_event_loop().run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+        data = await asyncio.get_event_loop().run_in_executor(None, lambda: ytdl.extract_info(url, download=False))     
         return cls(data.get('url'), requester, data.get('title'), data)
+
+    @classmethod
+    async def from_url_playlist(cls, url, requester=None):
+        data = await asyncio.get_event_loop().run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+        playlist = []
+        if data['_type'] == "playlist":
+            for item in data['entries']:
+                playlist.append(cls(item.get('url'), requester, item.get("title"), item))
+            return playlist
 
 class GuildQueue:
     def __init__(self, guild):
@@ -167,23 +176,33 @@ class Voice(KatCog):
             await ctx.send("Missing argument! `url / search`: Video to play.")
 
         async with ctx.typing():
-            item = await GuildQueueItem.from_url(url, ctx.author)
-
-            if not self.queues.get(ctx.guild.id):
-                # We are not playing any songs, create a queue and start music
-                if not ctx.guild.voice_client:
-                    await ctx.author.voice.channel.connect()
-                self.queues[ctx.guild.id] = GuildQueue(ctx.guild)
-                
-                self.queues[ctx.guild.id].add(item)
-                await self._after_play(None, ctx)
+            
+            if "/playlist" in url:
+                self.log.info("playlsit")
+                items = await GuildQueueItem.from_url_playlist(url, ctx.author)
             else:
-                if self.queues[ctx.guild.id].is_stopped:
-                    self.queues[ctx.guild.id].is_stopped = False
+                items = [await GuildQueueItem.from_url(url, ctx.author)]
+
+            for item in items:
+                if not self.queues.get(ctx.guild.id):
+                    # We are not playing any songs, create a queue and start music
+                    if not ctx.guild.voice_client:
+                        await ctx.author.voice.channel.connect()
+                    self.queues[ctx.guild.id] = GuildQueue(ctx.guild)
+                    
+                    self.queues[ctx.guild.id].add(item)
                     await self._after_play(None, ctx)
-                # Already have a queue, just add url to queue
-                self.queues[ctx.guild.id].add(item)
-                await ctx.send("Added " + item.title + " to the queue!")
+                else:
+                    if self.queues[ctx.guild.id].is_stopped:
+                        self.queues[ctx.guild.id].is_stopped = False
+                        await self._after_play(None, ctx)
+                    # Already have a queue, just add url to queue
+                    self.queues[ctx.guild.id].add(item)
+                    
+            if len(items) > 1:
+                await ctx.send("Added " + str(len(items)) + " to the queue!")
+            else:
+                await ctx.send("Added " + items[0].title + " to the queue!")
     
     @commands.command()
     async def stop(self, ctx):
