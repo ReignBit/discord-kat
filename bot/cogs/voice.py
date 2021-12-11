@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import datetime
 
 from discord import player
 from discord.ext import commands
@@ -26,10 +27,7 @@ ytdl = youtube_dl.YoutubeDL(
     }
 )
 
-ffmpeg_options = {
-    'options': '-vn',
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
-}
+
 
 class GuildQueueItem:
     __slots__ = "url", "requester", "title", "webpage_url", "duration", "data"
@@ -95,8 +93,9 @@ class StreamSource(discord.PCMVolumeTransformer):
         self.title = data.get('title')
         self.url = data.get('url')
 
+
     @classmethod
-    async def from_url(cls, url, loop=None, stream=False, volume=0.5):
+    async def from_url(cls, url, loop=None, stream=False, volume=0.5, timestamp=0):
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
@@ -104,6 +103,12 @@ class StreamSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
+
+        ffmpeg_options = {
+            'options': f'-vn -ss {timestamp}',
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
+        }
+
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data, volume=volume)
 
 class Voice(KatCog):
@@ -139,6 +144,8 @@ class Voice(KatCog):
     async def _after_play(self, error, ctx):
         if error:
             self.log.warn(error)
+            self.now_playing = None
+
 
         if self.queues.get(ctx.guild.id):
             # The guild has a queue
@@ -200,7 +207,7 @@ class Voice(KatCog):
                     self.queues[ctx.guild.id].add(item)
                     
             if len(items) > 1:
-                await ctx.send("Added " + str(len(items)) + " to the queue!")
+                await ctx.send("Added " + str(len(items)) + " songs to the queue!")
             else:
                 await ctx.send("Added " + items[0].title + " to the queue!")
     
@@ -316,6 +323,42 @@ class Voice(KatCog):
 
 
     #TODO: Load queues
+
+
+    @commands.command()
+    async def seek(self, ctx, timestamp: str):
+        if not await self.check_voice_status(ctx) or not ctx.guild.voice_client.is_playing():
+            # Only try to seek if we are in voice and are playing a song.
+            return
+        
+        # Create new StreamSource with new ffmpeg_options: -ss {seconds}
+        # Load that into voice_client
+        seek_time = self.convert_to_seconds(timestamp)
+        
+
+        if seek_time:
+            current_url = ctx.guild.voice_client.source.url
+            new_stream = await StreamSource.from_url(current_url, self.bot.loop, stream=True, timestamp=seek_time)
+            ctx.guild.voice_client.source = new_stream
+        else:
+            await ctx.send("Timestamp must be in the format of HH:MM:SS, MM:SS, or SS!")
+
+    def convert_to_seconds(self, str_time):
+        """Convert a HH:MM:SS or MM:SS into seconds (if is already in seconds - return that instead.)"""
+
+        if ":" in str_time:
+            try:
+                date_time = datetime.datetime.strptime(str_time, "%H:%M:%S")
+            except:
+                date_time = datetime.datetime.strptime(str_time, "%M:%S")
+
+            a_timedelta = date_time - datetime.datetime(1900, 1, 1)
+            return a_timedelta.total_seconds()
+        
+        try:
+            return int(str_time)
+        except:
+            return None
 
 
     def cog_unload(self):

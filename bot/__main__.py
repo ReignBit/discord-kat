@@ -41,12 +41,7 @@ class Kat(commands.Bot):
 
         self.code_line_count = calculate_lines()
 
-        self.is_launched_through_orwell = False
         self._is_maintenance_mode = constants.Bot.maintenance_mode
-
-        # Old SQL
-        # self.sql = database.SqlEngine(self)
-        # self.sql.create_sql_session()
 
         # New API
         self.session = APIClient()
