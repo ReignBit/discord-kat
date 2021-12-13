@@ -27,7 +27,7 @@ ytdl = youtube_dl.YoutubeDL(
     }
 )
 
-
+MAX_TRIES_GET_STREAM = 5
 
 class GuildQueueItem:
     __slots__ = "url", "requester", "title", "webpage_url", "duration", "data"
@@ -139,7 +139,21 @@ class Voice(KatCog):
             await ctx.send("You must be in the same room as Kat to use this command!")
             return False
         return True
-        
+    
+    async def try_get_url_stream(self, item: GuildQueueItem) -> StreamSource:
+        """Attempt to build a StreamSource from a url."""
+        # Doing this can sometimes raise a 403 Forbidden from YtDL.
+        # When this happens, the queue will break and has to be cleared manually. 
+        # To alieveate that, we try multiple times before giving up and gracefully clean up if we do error.
+
+        for x in range(MAX_TRIES_GET_STREAM+1):
+            try:
+                source = await StreamSource.from_url(item.url, loop=self.bot.loop, stream=True)
+                return source
+            except: 
+                self.log.debug("Failed to get stream for url: " + item.url)
+        self.log.warn(f"Failed to get stream for url: {item.url} after {MAX_TRIES_GET_STREAM}")    
+        return None
 
     async def _after_play(self, error, ctx):
         if error:
@@ -152,7 +166,14 @@ class Voice(KatCog):
             if len(self.queues[ctx.guild.id].queue) > 0:
                 if not self.queues[ctx.guild.id].is_stopped:
                     guild_queue_item = self.queues[ctx.guild.id].pop()
-                    source = await StreamSource.from_url(guild_queue_item.url, loop=self.bot.loop, stream=True)
+                    
+
+                    # Try to get video stream. Can return 403 Forbidden error sometimes, this *should* fix that.
+                    source = await self.try_get_url_stream(guild_queue_item)
+                    if source is None:
+                        self.queues[ctx.guild.id].now_playing = None
+                        await ctx.send(f"Failed to retrieve stream for url <{guild_queue_item.url}>")
+                    
                     ctx.guild.voice_client.play(source, after=lambda e: self.bot.loop.create_task(self._after_play(e, ctx)))
                 
                     now_playing = self.queues[ctx.guild.id].now_playing
