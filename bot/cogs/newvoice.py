@@ -117,6 +117,9 @@ class Newvoice(KatCog):
         """Shuffles current queue"""
         if self.playlists.get(ctx.guild.id):
             self.playlists[ctx.guild.id].shuffle()
+            await ctx.send("Playlist shuffled!")
+        else:
+            await ctx.send("Nothing shuffled!")
 
     @commands.command()
     async def pause(self, ctx):
