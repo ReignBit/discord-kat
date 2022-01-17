@@ -3,7 +3,10 @@ import functools
 import json
 from typing import Optional, Tuple
 
+from subprocess import STDOUT
+
 import discord
+from enum import Enum
 
 import youtube_dl
 
@@ -11,9 +14,9 @@ import youtube_dl
 #########################################################
 
 #TODO:                STILL TO DO
-# 1. Seeking is broken completely
-# 2. Playing single song (no playlist) is broken
-# 3. Need to test if other providers still work (newsground, other)
+# 1. Seeking is broken completely ✔                                 white noise weirdness if you seek too much?
+# 2. Playing single song (no playlist) is broken ✔
+# 3. Need to test if other providers still work (newsground, other) 
 # 4. Replace all ctx.send() with appropriate get_embed and get_response
 # 5. Go through and test all combinations of commands and states
 
@@ -36,10 +39,30 @@ ytdl = youtube_dl.YoutubeDL(
     'extract_flat': True,       # Speeds up extract_info by a fuck ton. (eg: 70 song playlist used to take ~30 seconds, now takes 0.4 seconds)
     'skip_download': True,
     'no_warnings': True,
-    'default_search': 'youtube',
+    'default_search': 'auto',
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
     }
 )
+
+# Used for when no url is supplied, only a search term. If extract_flat is set then we only get ytsearch:<term> and nothing of use.
+ytdl_deep = youtube_dl.YoutubeDL(
+    {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'extract_flat': False,       # Disabled for searches.
+    'skip_download': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+    }
+)
+
 
 def set_logger(logger):
     Track.logger = logger
@@ -53,17 +76,16 @@ class TrackSource(discord.PCMVolumeTransformer):
         
     
     def read(self):
-        self.ms += 20
-        return super().read()
-
+        try:
+            data = super().read()
+            self.ms += 20
+        except Exception as e:
+            Track.logger.warn(e)
+        else:
+            return data
+        return None
 
     def __repr__(self):
-        return {
-            'url': self.source,
-            'ms': self.ms,
-        }
-
-    def __str__(self):
         return str({
             'url': self.source,
             'ms': self.ms,
@@ -71,13 +93,11 @@ class TrackSource(discord.PCMVolumeTransformer):
     
     @classmethod
     def from_url(cls, url, ffmpeg_options):
-        return cls(url, discord.FFmpegPCMAudio(url, **ffmpeg_options), volume=0.5)
+        return cls(url, discord.FFmpegPCMAudio(url, **ffmpeg_options, stderr=STDOUT), volume=0.5)
 
 
 class Track:
-
     logger = None
-
     def __init__(self, url, requested_by: discord.Member, data: dict, loop=None):
         """Information about a song/video in a playlist.
 
@@ -94,24 +114,19 @@ class Track:
         """
         self.loop = loop or asyncio.get_event_loop()
 
-
         self.url            = url           # A normal url (eg: https://www.youtube.com/watch?v=dQw4w9WgXcQ)
         self.requested_by   = requested_by  # discord.Member who requested the song
-
 
         self._data          = data
         self.title          = self._data['title']
         self.duration       = self._data['duration']
 
         self.readable       = f"{self.title} [{self.duration}] {self.requested_by.mention}"
-
         self._source        = None
 
 
     @property
     def source(self):
-        if self._source is None:
-            Track.logger.warn("Tried to access source before it was generated!")
         return self._source
     
     @source.setter
@@ -120,28 +135,42 @@ class Track:
     
 
     @classmethod
-    async def from_url(cls, url, requester, loop=None) -> list:
+    async def from_url(cls, url, requester, loop) -> list:
         """Create Track from a source url. If url is a playlist then the list of all videos is returned.
 
         Args:
             url (str): URL of the video(s)
             requester (discord.Member): Member who requested the video(s)
-            loop (asyncio.Loop, optional): Event loop to run on. If left blank, asyncio.get_event_loop() is called.
+            loop (asyncio.Loop): Event loop to run on.
 
         Returns:
             list: List of Track
         """
         loop = loop
-
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
 
+
+        # Proper Youtube Playlist link (https://youtube.com/playlist?....)
         if data.get('_type', "") == "playlist":
             tracks = []
             for track in data['entries']:
                 tracks.append(cls("https://youtube.com/watch?v=" + track['url'], requester, track, loop=loop))
             return tracks
 
-        return [cls(url, requester, data, loop=loop)]
+        # Indirect Youtube Playlist link (https://youtube.com/watch?v=....&list=....)
+        if data.get('_type', "") == "url" and data['url'].startswith("https://www.youtube.com/playlist?list="):
+            data = await loop.run_in_executor(None, lambda: ytdl.extract_info(data['url'], download=False))
+            tracks = []
+            for track in data['entries']:
+                tracks.append(cls("https://youtube.com/watch?v=" + track['url'], requester, track, loop=loop))
+            return tracks
+
+        # Search Query (ytsearch:rickroll)
+        if data['url'].startswith("ytsearch:"):
+            data = await loop.run_in_executor(None, lambda: ytdl_deep.extract_info(url, download=False))
+            data = data['entries'][0]
+
+        return [cls(data['webpage_url'], requester, data, loop=loop)]
 
 
     def _extract_info(self):
@@ -152,7 +181,7 @@ class Track:
         """Build an FFmpeg Stream from a url"""
 
         ffmpeg_options = {
-            'options': f'-vn -ss {timestamp}',
+            'options': f'-vn -ss {timestamp / 1000} -to {self.duration} -b:a 126K',
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
         }
         # We have to extract_info here again to get the latest stream URL.
@@ -168,7 +197,9 @@ class Track:
 
     def seek(self, position: int) -> TrackSource:
         """Seek to a position in the Track (ms)"""
+        Track.logger.debug(f"Seeking to position: {position}")
         self.generate_source(position)
+        self.ms = position
         return self.source
         
 
@@ -176,18 +207,25 @@ class Track:
         """Seek stream to 0."""
         self.seek(0)
 
-    def __str__(self):
-        return json.dumps(
+    def __repr__(self):
+        return str(
             {
             'title': self.title,
             'requested_by': self.requested_by.display_name,
             'duration': self.duration,
             'url': self.url,
-            'source': self.source.__repr__()
+            'source': self.source
         }
-        ,indent=4
         )
 
+
+class PlayerStatus(Enum):
+    NOT_PLAYING = 0
+    PLAYING = 1
+    PAUSED = 2
+    PLAYLIST_EMPTY = 3
+    ERRORED = 4
+    NOT_IN_CHANNEL = 5
 
 class TrackPlaylist:
     """Per guild queue of Tracks"""
@@ -202,22 +240,25 @@ class TrackPlaylist:
         self.guild          = guild
         self.loop           = loop
 
+        self.status         = PlayerStatus.PLAYLIST_EMPTY
+
     @property
     def length(self):
         return len(self.queue)
 
 
-    async def insert(self, url: str, requester: discord.Member) -> Track:
+    async def insert(self, url: str, requester: discord.Member) -> list[Track]:
         """Enqueue a new Track instance with url.
 
         Args:
             url (str): URL of the video to insert to queue.
 
         Returns:
-            list(Track): Tracks extracted from the url.
+            list[Track]: Tracks extracted from the url.
         """
-        tracks = await Track.from_url(url, requester, loop=self.loop) # from_url returns list(GuildQueueItem)
+        tracks = await Track.from_url(url, requester, loop=self.loop) # from_url returns list(Track)
         [self.queue.append(track) for track in tracks]
+        return tracks
 
 
     def pop(self, index=0) -> Track:
@@ -241,8 +282,13 @@ class TrackPlaylist:
             position (int): Position in the Track to seek to.
         """
         if self.now_playing:
+            self.ctx.guild.voice_client.pause()
+            self.is_stopped = True
             source = self.now_playing.seek(position)
             self.ctx.guild.voice_client.source = source
+            self.ctx.guild.voice_client.resume()
+            self.is_stopped = False
+
 
     
     async def play(self) -> None:
@@ -290,8 +336,12 @@ class TrackPlaylist:
             return False
         return True            
 
+    async def _after_playback(self, error=None):
+        # pre
+        await self._pre_after_playback(error)
+        TrackPlaylist.logger.debug(self)
 
-    async def _after_playback(self, error):
+    async def _pre_after_playback(self, error):
         """Called when a Track has finished playing.
 
         Args:
@@ -300,35 +350,40 @@ class TrackPlaylist:
         """
         ctx = self.ctx
 
-        TrackPlaylist.logger.debug(error)
         if error:
             TrackPlaylist.logger.warn(error)
+            self.status = PlayerStatus.ERRORED
             await ctx.send(error)
 
-        if await self.check_voice_status() == False:
+        if not await self.check_voice_status():
             TrackPlaylist.logger.debug(f"{ctx.guild.id} failed to join voice due to user error.")
+            self.status = PlayerStatus.NOT_IN_CHANNEL
             return
 
         if self.length == 0:
             TrackPlaylist.logger.debug(f"{ctx.guild.id} no longer has Tracks in the queue.")
+            self.now_playing = None
+            self.status = PlayerStatus.PLAYLIST_EMPTY
             return
 
         if self.is_stopped:
             TrackPlaylist.logger.debug(f"{ctx.guild.id} is_stopped=True")
+            self.status = PlayerStatus.PAUSED
             return
 
         # Has playlist, with tracks, not stopped, in voice
         track = self.pop()
         self.now_playing = track
-        TrackPlaylist.logger.debug(str(track.generate_source()))
-        ctx.guild.voice_client.play(track.source, after=lambda e: self.loop.create_task(self._after_playback(e)))
+        ctx.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
         await ctx.send(f"Now playing: {track.url}\nRequested by: {track.requested_by.display_name}")
+        
+        self.status = PlayerStatus.PLAYING
         return self.now_playing
 
-
-    def json(self):
-        return {
+    def __repr__(self):
+        return str({
+            'status': self.status.name,
             'now_playing': self.now_playing,
             'length': self.length,
-            'queue': [track.__str__ for track in self.queue]
-        }
+            'queue': [track for track in self.queue]
+        })

@@ -46,19 +46,35 @@ class Newvoice(KatCog):
         
         set_logger(self.log)
 
+    def get_playlist(self, ctx) -> TrackPlaylist:
+        """Attempt to retrieve a guild's TrackPlaylist or create one if does'nt exist."""
+        try:
+            return self.playlists[ctx.guild.id]
+        except KeyError:
+            player = TrackPlaylist(self.bot.loop, ctx.guild, ctx)
+            self.playlists[ctx.guild.id] = player
+            return player
 
     @commands.command()
     async def play(self, ctx, *, url=""):
         """Plays a song or playlist."""
-
         async with ctx.typing():
-            if not self.playlists.get(ctx.guild.id):
-                playlist = TrackPlaylist(self.bot.loop, ctx.guild, ctx)
-                await playlist.insert(url, ctx.author)
+            playlist = self.get_playlist(ctx)
+            tracks = await playlist.insert(url, ctx.author)
 
-                self.playlists[ctx.guild.id] = playlist
+            if len(tracks) > 1:
+                msg = "Added {} to the queue!"
+            else:
+                msg = "Added tracks to the queue!"
+
+            if not await playlist.check_voice_status():
+                return
+
+            if not ctx.guild.voice_client.is_playing():
                 await self.playlists[ctx.guild.id].play()
-    
+                return
+            
+            await ctx.send(msg)
     
     @commands.command(aliases=['cl','purge','clearplaylist'])
     async def clearqueue(self, ctx):
@@ -110,7 +126,9 @@ class Newvoice(KatCog):
             string = "```\n" + "".join([f"{i}. {track.readable}\n" for i, track in enumerate(self.playlists[ctx.guild.id].queue)]) + "```"
             await ctx.send(string)
 
-
+    @commands.command()
+    async def debug(self, ctx):
+        await ctx.send("```py\n%s\n```" % self.get_playlist(ctx))
 
 def setup(bot):
     bot.add_cog(Newvoice(bot))

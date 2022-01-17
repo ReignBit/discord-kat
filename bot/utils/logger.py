@@ -141,7 +141,7 @@ class MyFileHandler(logging.Handler):
     def emit(self, record):
         log_text = self.format(record)
         try:
-            fh = open(self.filename, "a")
+            fh = open(self.filename, "a", encoding="utf-8")
             fh.write(log_text + "\n")
             fh.close()
 
