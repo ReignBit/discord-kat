@@ -290,11 +290,16 @@ class TrackPlaylist:
             self.is_stopped = False
 
 
-    
     async def play(self) -> None:
         """Plays the next available track. Used to start the playlist."""
         await self._after_playback(None)
     
+
+    async def shuffle(self):
+        """Shuffles playlist"""
+        random.shuffle(self.queue)
+
+
     def stop(self):
         """Stop the player and clear the playlist."""
         self.now_playing = None

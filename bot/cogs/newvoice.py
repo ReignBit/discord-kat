@@ -113,6 +113,12 @@ class Newvoice(KatCog):
                     await ctx.send("Incorrect time format. Must be in the format of either `12:34:56`, `34:56`, or `56`.")
 
     @commands.command()
+    async def shuffle(self, ctx):
+        """Shuffles current queue"""
+        if self.playlists.get(ctx.guild.id):
+            self.playlists[ctx.guild.id].shuffle()
+
+    @commands.command()
     async def pause(self, ctx):
         if self.playlists.get(ctx.guild.id):
             if self.playlists[ctx.guild.id].now_playing:
