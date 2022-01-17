@@ -118,9 +118,16 @@ class Newvoice(KatCog):
         if self.playlists.get(ctx.guild.id):
             await self.playlists[ctx.guild.id].shuffle()
             await ctx.send("Playlist shuffled!")
+            string = "```\n" + "".join([f"{i}. {track.readable}\n" for i, track in enumerate(self.playlists[ctx.guild.id].queue)]) + "```"
+            await ctx.send(string)
         else:
             await ctx.send("Nothing shuffled!")
 
+    @commands.command(aliases=['np','nowplaying'])
+    async def now_playing(self, ctx):
+        if self.playlists.get(ctx.guild.id):
+            await self.playlists[ctx.guild.id].now_playing()
+            
     @commands.command()
     async def pause(self, ctx):
         if self.playlists.get(ctx.guild.id):

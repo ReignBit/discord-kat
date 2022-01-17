@@ -294,6 +294,12 @@ class TrackPlaylist:
         """Plays the next available track. Used to start the playlist."""
         await self._after_playback(None)
     
+    async def now_playing(self):
+        if self.now_playing:
+            try:
+                await self.ctx.send(f"Now playing: {self.now_playing.url}\nRequested by: {self.now_playing.requested_by.display_name}")
+            except:
+                pass
 
     async def shuffle(self):
         """Shuffles playlist"""
