@@ -117,8 +117,8 @@ class Core(KatCog):
     @commands.group(hidden=True)
     async def kat(self, ctx):
         pass
-        # if not perms.is_author(self.bot, ctx.author.id):
-        #     return// Add back later
+        if not perms.is_author(self.bot, ctx.author.id):
+            return
 
     def check(self, msg):
         if msg.author.id == self.bot.app_info.owner.id:
@@ -202,7 +202,7 @@ class Core(KatCog):
             await self.throw_command_error_to_message(ctx, err)
 
     @kat.command(hidden=True)
-    # @commands.is_owner()//Add back later
+    @commands.is_owner()
     async def exec(self, ctx, *args):
         args = " ".join(args)
         try:
