@@ -449,7 +449,6 @@ class TrackPlaylist:
     
     async def play_link(self,link,author):
         track = Track(link, author, data={"title":"simulator radio","duration":60000000})
-<<<<<<< Updated upstream
         if self.queue == []:
             self.guild.voice_client.play(link)
         else:
@@ -457,11 +456,6 @@ class TrackPlaylist:
             if self.guild.voice_client == None:
                 self.voice_channel.connect()
         
-=======
-        self.queue.append(track)
-        if self.guild.voice_client == None:
-            self.voice_channel.connect()
->>>>>>> Stashed changes
         
     def __repr__(self):
         return str({
