@@ -1,4 +1,4 @@
-# Kat Discord Bot (Version 3.3.0)
+# Kat Discord Bot (Version 3.3.5)
 
 
 ![master](https://github.com/ReignBit/discord-kat/workflows/test-units/badge.svg?branch=master)
