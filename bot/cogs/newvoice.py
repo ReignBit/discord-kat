@@ -85,19 +85,7 @@ class Newvoice(KatCog):
             
             await ctx.send(msg)
     
-<<<<<<< Updated upstream
     @commands.command(aliases=['cl','purge','clearplaylist','clear'])
-=======
-    @commands.command(aliases=['simulatorradio'])
-    async def simulator_radio(self, ctx):
-        """Plays simulator radio"""        
-        if(self.playlists.get(ctx.guild.id)):            
-            await self.playlists[ctx.guild.id].update_channel(ctx.author.voice.channel)
-            await self.playlists[ctx.guild.id].play_link("https://simulatorradio.stream/stream?1643236017005",ctx.author)
-            await ctx.send("Playing simulator radio")
-    
-    @commands.command(aliases=['cl','purge','clearplaylist'])
->>>>>>> Stashed changes
     async def clearqueue(self, ctx):
         """Clears the current queue."""
         if self.playlists.get(ctx.guild.id):
