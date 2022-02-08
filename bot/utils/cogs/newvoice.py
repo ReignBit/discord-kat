@@ -1,6 +1,8 @@
 import asyncio
+from dis import disco
 import functools
 import json
+from re import T
 from typing import Optional, Tuple
 
 from subprocess import STDOUT
@@ -19,7 +21,7 @@ import random
 # 3. Need to test if other providers still work (newsground, other) 
 # 4. Replace all ctx.send() with appropriate get_embed and get_response
 # 5. Go through and test all combinations of commands and states
-
+# 6. Save song lists/queues to play later
 #########################################################
 
 
@@ -239,7 +241,10 @@ class TrackPlaylist:
         self.ctx            = ctx
         self.guild          = guild
         self.loop           = loop
-
+        self.voice_channel  = ctx.author.voice.channel
+        self.current_track  = None
+        self.old_channel    = None
+        
         self.status         = PlayerStatus.PLAYLIST_EMPTY
 
     @property
@@ -260,7 +265,19 @@ class TrackPlaylist:
         [self.queue.append(track) for track in tracks]
         return tracks
 
-
+    async def validate_voice_status(self):
+        
+        #Check if kat  has a voice channel/voice client
+        if self.guild.voice_client:#if kat is already connected to a voice
+            return True
+        elif self.voice_channel:#if kat is not connected but has voice_channel
+            await self.voice_channel.connect()
+            return True
+        else:
+            if(self.voice_channel != None):
+                await self.ctx.send("You must be connected to a voice channel to use this command!")
+            return False
+        
     def pop(self, index=0) -> Track:
         """Remove and return a Track from the queue.
 
@@ -282,39 +299,47 @@ class TrackPlaylist:
             position (int): Position in the Track to seek to.
         """
         if self.now_playing:
-            self.ctx.guild.voice_client.pause()
+            self.guild.voice_client.pause()
             self.is_stopped = True
             source = self.now_playing.seek(position)
-            self.ctx.guild.voice_client.source = source
-            self.ctx.guild.voice_client.resume()
+            self.guild.voice_client.source = source
+            self.guild.voice_client.resume()
             self.is_stopped = False
-
-
-    async def play(self) -> None:
-        """Plays the next available track. Used to start the playlist."""
-        await self._after_playback(None)
-    
+   
     async def now_playing(self):
         if self.now_playing:
-            try:
-                await self.ctx.send(f"Now playing: {self.now_playing.url}\nRequested by: {self.now_playing.requested_by.display_name}")
-            except:
-                pass
+            return f"Now playing: {self.now_playing.url}\nRequested by: {self.now_playing.requested_by.display_name}"
 
     async def shuffle(self):
         """Shuffles playlist"""
         random.shuffle(self.queue)
 
+    async def disconnect(self):
+        self.voice_channel = None
+        self.status = PlayerStatus.NOT_PLAYING
+        self.queue = []
+        self.is_stopped = True
+        self.now_playing = None
+
+    async def play(self) -> None:
+        """Plays the next available track. Used to start the playlist."""
+        await self._after_playback(None)
+        
+    async def get_queue(self):
+        return self.queue    
+
+    async def get_now_playing(self):
+        return str(self.now_playing.title)
 
     def stop(self):
         """Stop the player and clear the playlist."""
         self.now_playing = None
         self.queue = []
-        self.ctx.guild.voice_client.stop()
+        self.guild.voice_client.stop()
 
     async def skip(self) -> Track:
         """Skips the current song, if one is playing, returns the next Track"""
-        self.ctx.guild.voice_client.stop()
+        self.guild.voice_client.stop()
     
     def pause_play(self, resume=False) -> None:
         """Pause/Resume the current playing Track
@@ -325,32 +350,16 @@ class TrackPlaylist:
 
         if not resume:
             self.is_stopped = True
-            self.ctx.guild.voice_client.pause()
+            self.guild.voice_client.pause()
         else:
             self.is_stopped = False
-            self.ctx.guild.voice_client.resume()
+            self.guild.voice_client.resume()
 
-    async def check_voice_status(self):
-        # If author no voice
-        # If have voice and author have diff voice channel
-        ctx = self.ctx
-        if not ctx.author.voice:
-            await ctx.send("You must be connected to a voice channel to use this command!")
-            return False
-        
-        if not ctx.guild.voice_client:
-            await ctx.author.voice.channel.connect()
-            return True
-
-        if ctx.guild.voice_client.channel != ctx.author.voice.channel:
-            await ctx.send("You must be in the same room as Kat to use this command!")
-            return False
-        return True            
+     
 
     async def _after_playback(self, error=None):
         # pre
         await self._pre_after_playback(error)
-        TrackPlaylist.logger.debug(self)
 
     async def _pre_after_playback(self, error):
         """Called when a Track has finished playing.
@@ -364,33 +373,60 @@ class TrackPlaylist:
         if error:
             TrackPlaylist.logger.warn(error)
             self.status = PlayerStatus.ERRORED
-            await ctx.send(error)
+            raise error
 
-        if not await self.check_voice_status():
-            TrackPlaylist.logger.debug(f"{ctx.guild.id} failed to join voice due to user error.")
-            self.status = PlayerStatus.NOT_IN_CHANNEL
+        if not await self.validate_voice_status():
             return
 
         if self.length == 0:
-            TrackPlaylist.logger.debug(f"{ctx.guild.id} no longer has Tracks in the queue.")
+            TrackPlaylist.logger.debug(f"{self.guild.id} no longer has Tracks in the queue.")
             self.now_playing = None
             self.status = PlayerStatus.PLAYLIST_EMPTY
             return
 
         if self.is_stopped:
-            TrackPlaylist.logger.debug(f"{ctx.guild.id} is_stopped=True")
+            TrackPlaylist.logger.debug(f"{self.guild.id} is_stopped=True")
             self.status = PlayerStatus.PAUSED
             return
 
         # Has playlist, with tracks, not stopped, in voice
         track = self.pop()
         self.now_playing = track
-        ctx.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
+        self.current_track = track
+        # ctx.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
+        
+        self.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
         await ctx.send(f"Now playing: {track.url}\nRequested by: {track.requested_by.display_name}")
         
         self.status = PlayerStatus.PLAYING
         return self.now_playing
 
+    async def voice_state_update(self, before, after):
+        self.voice_channel = after.channel  
+        if self.voice_channel == None:#If bot get's disconnected by user
+                self.voice_channel = None
+                self.old_channel = before
+                self.status = PlayerStatus.NOT_PLAYING
+                self.queue = []
+                self.is_stopped = True
+                self.now_playing = None
+                self.current_track = None
+                if self.guild.voice_client != None:
+                    await self.guild.voice_client.disconnect()
+        else:#If bot moved
+            self.is_stopped = False
+            self.guild.voice_client.resume()
+     
+    async def insert_next(self, url: str, requester: discord.Member):
+        tracks = await Track.from_url(url, requester, loop=self.loop) # from_url returns list(Track)
+        i = 0
+        for track in tracks:
+            self.queue.insert(i,track)
+            i += 1
+    
+    async def update_channel(self,channel):
+        self.voice_channel = channel
+       
     def __repr__(self):
         return str({
             'status': self.status.name,

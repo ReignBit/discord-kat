@@ -61,16 +61,19 @@ class Newvoice(KatCog):
         async with ctx.typing():
             playlist = self.get_playlist(ctx)
             tracks = await playlist.insert(url, ctx.author)
-
+           
             if len(tracks) > 1:
-                msg = "Added {} to the queue!"
+                msg = "Added {} to the queue!".format(len(tracks))
             else:
-                msg = "Added tracks to the queue!"
-
-            if not await playlist.check_voice_status():
+                msg = "Added {} to the queue!".format(str(url))
+                
+            await self.playlists[ctx.guild.id].update_channel(ctx.author.voice.channel)
+            
+            if not await playlist.validate_voice_status():
+                TrackPlaylist.logger.debug("Validating voice status error")
                 return
 
-            if not ctx.guild.voice_client.is_playing():
+            if not ctx.guild.voice_client.is_playing():                
                 await self.playlists[ctx.guild.id].play()
                 return
             
@@ -125,26 +128,93 @@ class Newvoice(KatCog):
 
     @commands.command(aliases=['np','nowplaying'])
     async def now_playing(self, ctx):
-        if self.playlists.get(ctx.guild.id):
-            await self.playlists[ctx.guild.id].now_playing()
+        id = ctx.guild.id
+        if self.playlists.get(id):
+            if self.playlists[id].is_stopped:
+                await ctx.send("Nothing in queue!")
+                return  
+            if self.playlists[id].current_track == None:
+                await ctx.send("Nothing in queue!")
+                return   
+            line = f"Now playing: {self.playlists[id].current_track.title}\n"
+            line += f"Requested by: {self.playlists[id].current_track.requested_by.display_name}\n"
+            line += f"{self.playlists[id].current_track.url}"
+            await ctx.send(line)
             
     @commands.command()
     async def pause(self, ctx):
-        if self.playlists.get(ctx.guild.id):
-            if self.playlists[ctx.guild.id].now_playing:
-                self.playlists[ctx.guild.id].pause_play(False)
+        id = ctx.guild.id
+        if self.playlists.get(id):
+            if self.playlists[id].now_playing:
+                self.playlists[id].pause_play(False)
             else:
-                self.playlists[ctx.guild.id].pause_play(True)
+                self.playlists[id].pause_play(True)
 
-    @commands.command()
+    @commands.command(aliases=['qeueu','q'])
     async def queue(self, ctx):
-        if self.playlists.get(ctx.guild.id):
-            string = "```\n" + "".join([f"{i}. {track.readable}\n" for i, track in enumerate(self.playlists[ctx.guild.id].queue)]) + "```"
-            await ctx.send(string)
+        id = ctx.guild.id
+        if self.playlists.get(id):
+            if self.playlists[id].is_stopped:
+                await ctx.send("Nothing in queue!")
+                return
+            line = f"Currently playing: {self.playlists[id].current_track.title}\n"
+            counter = 1
+            for track in await self.playlists[id].get_queue():
+                line += f"{counter}. {track.title}"                
+                if counter == 10:
+                    break 
+                counter += 1
+                line += "\n"
+            if await self.playlists[id].get_queue() == []:
+                line += "Nothing in queue"
+            await ctx.send(line)
 
     @commands.command()
     async def debug(self, ctx):
         await ctx.send("```py\n%s\n```" % self.get_playlist(ctx))
 
+    @commands.command(aliases=['leave','dc'])
+    async def disconnect(self, ctx):
+        id = ctx.guild.id
+        if(self.playlists.get(id)):
+            await self.playlists[id].disconnect()
+            await ctx.guild.voice_client.disconnect()
+            await ctx.send("Bye bye!")
+
+    @commands.command(aliases=['playnext'])
+    async def play_next(self, ctx, *, url=""):
+        """Plays a song or playlist."""
+        async with ctx.typing():
+            playlist = self.get_playlist(ctx)
+            tracks = await playlist.insert_next(url, ctx.author)
+
+            if len(tracks) > 1:
+                msg = "Added {} to the queue!".format(len(tracks))
+            else:
+                msg = "Added {} to the queue!".format(str(url))
+
+            if not await playlist.validate_voice_status():
+                TrackPlaylist.logger.debug("Validating voice status error")
+                return
+
+            if not ctx.guild.voice_client.is_playing():
+                await self.playlists[ctx.guild.id].play()
+                return
+            
+            await ctx.send(msg)
+        
+        
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        if(before.channel == after.channel):
+            return
+        id = member.guild.id
+        if(self.playlists.get(id)):
+            await self.playlists[id].voice_state_update(before, after)
+        
+        
+            
+        
+    
 def setup(bot):
     bot.add_cog(Newvoice(bot))
