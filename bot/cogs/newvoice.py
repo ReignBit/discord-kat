@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import datetime
+from random import shuffle
 import time
 from inspect import trace
 from typing import Optional, Tuple, Union
@@ -60,7 +61,12 @@ class Newvoice(KatCog):
         """Plays a song or playlist."""
         async with ctx.typing():
             playlist = self.get_playlist(ctx)
-            tracks = await playlist.insert(url, ctx.author)
+            tracks = []
+            try:
+                tracks = await playlist.insert(url, ctx.author)
+            except:
+                await ctx.send("That link doesn't seem to work :(")
+                return
            
             if len(tracks) > 1:
                 msg = "Added {} to the queue!".format(len(tracks))
@@ -79,7 +85,7 @@ class Newvoice(KatCog):
             
             await ctx.send(msg)
     
-    @commands.command(aliases=['cl','purge','clearplaylist'])
+    @commands.command(aliases=['cl','purge','clearplaylist','clear'])
     async def clearqueue(self, ctx):
         """Clears the current queue."""
         if self.playlists.get(ctx.guild.id):
@@ -118,11 +124,24 @@ class Newvoice(KatCog):
     @commands.command()
     async def shuffle(self, ctx):
         """Shuffles current queue"""
-        if self.playlists.get(ctx.guild.id):
+        id = ctx.guild.id
+        if self.playlists.get(id):
+            if self.playlists[id].is_stopped:
+                await ctx.send("Nothing in queue!")
+                return
             await self.playlists[ctx.guild.id].shuffle()
-            await ctx.send("Playlist shuffled!")
-            string = "```\n" + "".join([f"{i}. {track.readable}\n" for i, track in enumerate(self.playlists[ctx.guild.id].queue)]) + "```"
-            await ctx.send(string)
+            await ctx.send("Playlist shuffled!\n")
+            line = f"Currently playing: {self.playlists[id].current_track.title}\n"
+            counter = 1
+            for track in await self.playlists[id].get_queue():
+                line += f"{counter}. {track.title}"                
+                if counter == 10:
+                    break 
+                counter += 1
+                line += "\n"
+            if await self.playlists[id].get_queue() == []:
+                line += "Nothing in queue"
+            await ctx.send(line)        
         else:
             await ctx.send("Nothing shuffled!")
 
@@ -137,6 +156,11 @@ class Newvoice(KatCog):
                 await ctx.send("Nothing in queue!")
                 return   
             line = f"Now playing: {self.playlists[id].current_track.title}\n"
+            # timestamp = (self.playlists[id].current_track._source.ms)/1000            
+            # timestamp = f"{'0' if int(round((timestamp//1))/60)<10 else ''}{int(round((timestamp//1))/60)}:{'0' if int(round((timestamp%1))*60)<10 else ''}{int(round((timestamp%1))*60)}"
+            # duration = self.playlists[id].current_track.duration
+            # duration = f"{'0' if int(round((duration//1))/60)<10 else ''}{int(round((duration//1))/60)}:{'0' if int(round((duration%1))*60)<10 else ''}{int(round((duration%1))*60)}"       
+            # line += f"Current timestamp: {timestamp}/{duration}\n"
             line += f"Requested by: {self.playlists[id].current_track.requested_by.display_name}\n"
             line += f"{self.playlists[id].current_track.url}"
             await ctx.send(line)
@@ -206,6 +230,8 @@ class Newvoice(KatCog):
         
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
+        if(member.id != self.bot.id):
+            return
         if(before.channel == after.channel):
             return
         id = member.guild.id

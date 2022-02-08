@@ -22,6 +22,8 @@ import random
 # 4. Replace all ctx.send() with appropriate get_embed and get_response
 # 5. Go through and test all combinations of commands and states
 # 6. Save song lists/queues to play later
+# 7. Move command
+# 8. Skip to song in queue (number)
 #########################################################
 
 
@@ -402,20 +404,38 @@ class TrackPlaylist:
         return self.now_playing
 
     async def voice_state_update(self, before, after):
-        self.voice_channel = after.channel  
+        self.voice_channel = after.channel       
         if self.voice_channel == None:#If bot get's disconnected by user
-                self.voice_channel = None
-                self.old_channel = before
-                self.status = PlayerStatus.NOT_PLAYING
-                self.queue = []
-                self.is_stopped = True
-                self.now_playing = None
-                self.current_track = None
-                if self.guild.voice_client != None:
-                    await self.guild.voice_client.disconnect()
-        else:#If bot moved
-            self.is_stopped = False
-            self.guild.voice_client.resume()
+            TrackPlaylist.logger.info(f"[{self.guild.id} | {self.guild.name}] Bot disconnected")
+            self.voice_channel = None
+            self.old_channel = before
+            self.status = PlayerStatus.NOT_PLAYING
+            self.queue = []
+            self.is_stopped = True
+            self.now_playing = None
+            self.current_track = None
+            if self.guild.voice_client != None:
+                await self.guild.voice_client.disconnect()
+        elif before.channel != None:#If bot moved
+            TrackPlaylist.logger.info(f"[{self.guild.id} | {self.guild.name}] Bot moved")
+            if(self.guild.voice_client == None):
+                await self.voice_channel.connect() 
+            # self.guild.voice_client.resume()  
+            # self.guild
+            # self.is_stopped = True
+            # if(self.guild.voice_client == None):
+            #     await self.voice_channel.connect()            
+            # if self.now_playing:
+            #     self.guild.voice_client.pause()
+            #     self.is_stopped = True
+            #     source = self.current_track.seek(self.current_track._source.ms)
+            #     self.guild.voice_client.source = source
+            #     self.guild.voice_client.resume()
+            #     self.is_stopped = False 
+        else:#initial join
+            if(self.guild.voice_client == None):
+                await self.voice_channel.connect() 
+            self.guild.voice_client.resume()  
      
     async def insert_next(self, url: str, requester: discord.Member):
         tracks = await Track.from_url(url, requester, loop=self.loop) # from_url returns list(Track)
@@ -426,7 +446,17 @@ class TrackPlaylist:
     
     async def update_channel(self,channel):
         self.voice_channel = channel
-       
+    
+    async def play_link(self,link,author):
+        track = Track(link, author, data={"title":"simulator radio","duration":60000000})
+        if self.queue == []:
+            self.guild.voice_client.play(link)
+        else:
+            self.queue.append(track)
+            if self.guild.voice_client == None:
+                self.voice_channel.connect()
+        
+        
     def __repr__(self):
         return str({
             'status': self.status.name,
