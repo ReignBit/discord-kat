@@ -111,7 +111,7 @@ class Newvoice(KatCog):
                             added_title = "",
                             youtube_link = str(url),
                             duration = f"Total duration: {convert_sec_to_str(duration)}",
-                            author = ctx.author.nick
+                            author = ctx.author.display_name
                         )
                     )
                 ) 
@@ -198,7 +198,7 @@ class Newvoice(KatCog):
                         currently_playing_title = self.playlists[id].current_track.title,
                         youtube_url = self.playlists[id].current_track.url,
                         timestamp = convert_sec_to_str(self.playlists[id].current_track.duration),
-                        author = ctx.author.nick,
+                        author = ctx.author.display_name,
                         song_list = str(line)
                     )
             ))    
