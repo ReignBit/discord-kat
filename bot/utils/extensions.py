@@ -1,4 +1,5 @@
 """Utility methods for loading and unload extensions"""
+from email.policy import strict
 import gzip
 import json
 import sys
@@ -82,8 +83,7 @@ class KatCog(commands.Cog):
 
         t = Template(json_string)
         t = t.substitute(**kwargs)
-        self.log.debug(t)
-        _result = json.loads(t)
+        _result = json.loads(t,strict=False)
         return _result
 
     async def throw_command_error_to_message(self, ctx, error):
