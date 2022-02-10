@@ -6,7 +6,7 @@ from random import shuffle
 import time
 from inspect import trace
 from typing import Optional, Tuple, Union
-
+import math
 
 import discord
 import youtube_dl
@@ -40,6 +40,14 @@ def convert_str_to_milli(str_time):
         except:
             raise MilliConvertException
 
+def convert_sec_to_str(seconds):
+    """Convert milliseconds to a timestamp."""
+    line = str(datetime.timedelta(seconds=seconds))
+    if int(line[0:line.find(':')]) == 0:
+        line = line[line.find(':')+1:]
+    return line
+
+
 class Newvoice(KatCog):
     def __init__(self, bot):
         super().__init__(bot)
@@ -65,61 +73,98 @@ class Newvoice(KatCog):
             try:
                 tracks = await playlist.insert(url, ctx.author)
             except:
-                await ctx.send("That link doesn't seem to work :(")
+                embed = discord.Embed(title=f"That link doesn't seem to work:(", color=16777215)
+                await ctx.send(embed = embed)
                 return
-           
-            if len(tracks) > 1:
-                msg = "Added {} to the queue!".format(len(tracks))
-            else:
-                msg = "Added {} to the queue!".format(str(url))
-                
+                           
             await self.playlists[ctx.guild.id].update_channel(ctx.author.voice.channel)
             
             if not await playlist.validate_voice_status():
                 TrackPlaylist.logger.debug("Validating voice status error")
                 return
-
+            
+            if len(tracks) == 1:
+                song = tracks[0]
+                await ctx.send(
+                    embed = discord.Embed.from_dict(
+                        self.get_embed(
+                            "newvoice.embeds.play",
+                            track = url,
+                            youtube_url = song.url,
+                            added_title = song.title,
+                            youtube_link = song.url,
+                            duration = f"{convert_sec_to_str(song.duration)}",
+                            author = song.requested_by
+                        )
+                    )
+                ) 
+            elif len(tracks) > 1:
+                duration = 0
+                for track in tracks:
+                    duration += track.duration
+                await ctx.send(
+                    embed = discord.Embed.from_dict(
+                        self.get_embed(
+                            "newvoice.embeds.play",
+                            track = f"{len(tracks)} tracks",
+                            youtube_url = str(url),
+                            added_title = "",
+                            youtube_link = str(url),
+                            duration = f"Total duration: {convert_sec_to_str(duration)}",
+                            author = ctx.author.nick
+                        )
+                    )
+                ) 
+            self.playlists[ctx.guild.id].is_stopped = False     
             if not ctx.guild.voice_client.is_playing():                
                 await self.playlists[ctx.guild.id].play()
                 return
             
-            await ctx.send(msg)
     
     @commands.command(aliases=['cl','purge','clearplaylist','clear'])
     async def clearqueue(self, ctx):
         """Clears the current queue."""
         if self.playlists.get(ctx.guild.id):
             self.playlists[ctx.guild.id].queue = []
-
-            await ctx.send("Cleared playlist!")
+            embed = discord.Embed(title=f"Cleared the playlist!", color=16777215)
+            await ctx.send(embed = embed)
     
     @commands.command()
     async def stop(self, ctx):
         """Stop the current song."""
         if self.playlists.get(ctx.guild.id):
-            self.playlists[ctx.guild.id].stop()
-        
-            await ctx.send("Stopped the player!")
+            self.playlists[ctx.guild.id].stop()        
+            embed = discord.Embed(title=f"Stopped the music", color=16777215)
+            await ctx.send(embed = embed)
     
     @commands.command()
-    async def skip(self, ctx, url=""):
+    async def skip(self, ctx, count:str=None):
         """Skip the current song."""
-        if self.playlists.get(ctx.guild.id):
-            if self.playlists[ctx.guild.id].now_playing:
-                await self.playlists[ctx.guild.id].skip()
-                await ctx.send("Skipped the song!")
+        id = ctx.guild.id
+        if self.playlists.get(id):
+            if self.playlists[id].current_track:
+                if(count == None):
+                    await self.playlists[id].skip()
+                    embed = discord.Embed(title=f"Skipped current song", color=16777215)
+                    await ctx.send(embed = embed)
+                    return
+                # ctx.send(count)
+                # title = await self.playlists[id].skip_queue()
+                
+                    
     
     @commands.command()
     async def seek(self, ctx, pos="0"):
         """Seek into the current playing song."""
         if self.playlists.get(ctx.guild.id):
-            if self.playlists[ctx.guild.id].now_playing:
-                
+            if self.playlists[ctx.guild.id].current_track:                
                 try:
                     self.playlists[ctx.guild.id].seek_current_track(convert_str_to_milli(pos))
-                    await ctx.send(f"Seeked to {pos}")
+                    embed = discord.Embed(title=f"Seeked to {pos}", color=16777215)
+                    await ctx.send(embed = embed)
                 except MilliConvertException:
-                    await ctx.send("Incorrect time format. Must be in the format of either `12:34:56`, `34:56`, or `56`.")
+                    embed = discord.Embed(title=f"Incorrect time format. Must be in the format of either `12:34:56`, `34:56`, or `56`.", color=16777215)
+                    await ctx.send(embed = embed)
 
     @commands.command()
     async def shuffle(self, ctx):
@@ -127,49 +172,83 @@ class Newvoice(KatCog):
         id = ctx.guild.id
         if self.playlists.get(id):
             if self.playlists[id].is_stopped:
-                await ctx.send("Nothing in queue!")
+                embed = discord.Embed(title=f"Nothing in the queue", color=16777215)
+                await ctx.send(embed = embed)
                 return
-            await self.playlists[ctx.guild.id].shuffle()
-            await ctx.send("Playlist shuffled!\n")
-            line = f"Currently playing: {self.playlists[id].current_track.title}\n"
+            await self.playlists[id].shuffle()
+            embed = discord.Embed(title=f"Playlist shuffled", color=16777215)
+            await ctx.send(embed = embed)
+            line = ""
             counter = 1
+            #
             for track in await self.playlists[id].get_queue():
-                line += f"{counter}. {track.title}"                
+                title = str(track.title).replace('"',"").replace("'","").replace("$","")
+                line += f"{counter}. {title} | duration: [{convert_sec_to_str(track.duration)}]"                
                 if counter == 10:
                     break 
-                counter += 1
-                line += "\n"
+                else:
+                    counter += 1
+                    line += "\n"
             if await self.playlists[id].get_queue() == []:
                 line += "Nothing in queue"
-            await ctx.send(line)        
+            await ctx.send(
+                embed = discord.Embed.from_dict(
+                    self.get_embed(
+                        "newvoice.embeds.queue",
+                        currently_playing_title = self.playlists[id].current_track.title,
+                        youtube_url = self.playlists[id].current_track.url,
+                        timestamp = convert_sec_to_str(self.playlists[id].current_track.duration),
+                        author = ctx.author.nick,
+                        song_list = str(line)
+                    )
+            ))    
         else:
-            await ctx.send("Nothing shuffled!")
+            embed = discord.Embed(title=f"Nothing to shuffle. Try adding some songs using the play command", color=16777215)
+            await ctx.send(embed = embed)
 
     @commands.command(aliases=['np','nowplaying'])
     async def now_playing(self, ctx):
         id = ctx.guild.id
         if self.playlists.get(id):
             if self.playlists[id].is_stopped:
-                await ctx.send("Nothing in queue!")
+                embed = discord.Embed(title=f"Bot is currently stopped", color=16777215)
+                await ctx.send(embed = embed)
                 return  
             if self.playlists[id].current_track == None:
-                await ctx.send("Nothing in queue!")
+                embed = discord.Embed(title=f"Nothing is currently playing", color=16777215)
+                await ctx.send(embed = embed)
                 return   
-            line = f"Now playing: {self.playlists[id].current_track.title}\n"
-            # timestamp = (self.playlists[id].current_track._source.ms)/1000            
-            # timestamp = f"{'0' if int(round((timestamp//1))/60)<10 else ''}{int(round((timestamp//1))/60)}:{'0' if int(round((timestamp%1))*60)<10 else ''}{int(round((timestamp%1))*60)}"
-            # duration = self.playlists[id].current_track.duration
-            # duration = f"{'0' if int(round((duration//1))/60)<10 else ''}{int(round((duration//1))/60)}:{'0' if int(round((duration%1))*60)<10 else ''}{int(round((duration%1))*60)}"       
-            # line += f"Current timestamp: {timestamp}/{duration}\n"
-            line += f"Requested by: {self.playlists[id].current_track.requested_by.display_name}\n"
-            line += f"{self.playlists[id].current_track.url}"
-            await ctx.send(line)
+            timestamp = math.ceil((self.playlists[id].current_track._source.ms)/1000)          
+            duration = math.ceil(self.playlists[id].current_track.duration)
+            
+            comp_line   = ""
+            to_line     = ""
+            for x in range(math.floor(timestamp/duration*20)):
+                comp_line += "═"
+            for x in range(math.ceil(((duration-timestamp)/duration)*20)):
+                to_line += "═"
+                
+                       
+            await ctx.send(
+                embed = discord.Embed.from_dict(
+                    self.get_embed(
+                        "newvoice.embeds.now_playing",
+                        current_now = "Currently",
+                        title_of_song = self.playlists[id].current_track.title,
+                        youtube_url = self.playlists[id].current_track.url,
+                        youtube_link = self.playlists[id].current_track.url,
+                        completed_line = comp_line,
+                        to_play_line = to_line,
+                        timestamp = f"{convert_sec_to_str(timestamp)}/{convert_sec_to_str(duration)}",
+                        author = self.playlists[id].current_track.requested_by.display_name
+                    )
+            ))
             
     @commands.command()
     async def pause(self, ctx):
         id = ctx.guild.id
         if self.playlists.get(id):
-            if self.playlists[id].now_playing:
+            if self.playlists[id].current_track:
                 self.playlists[id].pause_play(False)
             else:
                 self.playlists[id].pause_play(True)
@@ -178,54 +257,70 @@ class Newvoice(KatCog):
     async def queue(self, ctx):
         id = ctx.guild.id
         if self.playlists.get(id):
-            if self.playlists[id].is_stopped:
-                await ctx.send("Nothing in queue!")
+            if self.playlists[id].is_stopped or self.queue == []:
+                embed = discord.Embed(title=f"Queue", description=f"Nothing in queue", color=16777215)
+                await ctx.send(embed=embed)
                 return
-            line = f"Currently playing: {self.playlists[id].current_track.title}\n"
+            
+            line = ""
             counter = 1
+            #
             for track in await self.playlists[id].get_queue():
-                line += f"{counter}. {track.title}"                
+                title = str(track.title).replace('"',"").replace("'","").replace("$","")
+                line += f"{counter}. {title} | duration: [{convert_sec_to_str(track.duration)}]"                
                 if counter == 10:
                     break 
-                counter += 1
-                line += "\n"
+                else:
+                    counter += 1
+                    line += "\n"
             if await self.playlists[id].get_queue() == []:
                 line += "Nothing in queue"
-            await ctx.send(line)
+            await ctx.send(
+                embed = discord.Embed.from_dict(
+                    self.get_embed(
+                        "newvoice.embeds.queue",
+                        currently_playing_title = self.playlists[id].current_track.title,
+                        youtube_url = self.playlists[id].current_track.url,
+                        timestamp = convert_sec_to_str(self.playlists[id].current_track.duration),
+                        author = ctx.author.nick,
+                        song_list = str(line)
+                    )
+            ))
 
     @commands.command()
     async def debug(self, ctx):
         await ctx.send("```py\n%s\n```" % self.get_playlist(ctx))
 
-    @commands.command(aliases=['leave','dc'])
+    @commands.command(aliases=['leave','dc','kys'])
     async def disconnect(self, ctx):
         id = ctx.guild.id
         if(self.playlists.get(id)):
             await self.playlists[id].disconnect()
             await ctx.guild.voice_client.disconnect()
-            await ctx.send("Bye bye!")
+            embed = discord.Embed(title=f"Bye Bye :)", color=16777215)
+            await ctx.send(embed = embed)
 
-    @commands.command(aliases=['playnext'])
-    async def play_next(self, ctx, *, url=""):
-        """Plays a song or playlist."""
-        async with ctx.typing():
-            playlist = self.get_playlist(ctx)
-            tracks = await playlist.insert_next(url, ctx.author)
+    # @commands.command(aliases=['playnext'])
+    # async def play_next(self, ctx, *, url=""):
+    #     """Plays a song or playlist."""
+    #     async with ctx.typing():
+    #         playlist = self.get_playlist(ctx)
+    #         tracks = await playlist.insert_next(url, ctx.author)
 
-            if len(tracks) > 1:
-                msg = "Added {} to the queue!".format(len(tracks))
-            else:
-                msg = "Added {} to the queue!".format(str(url))
+    #         if len(tracks) > 1:
+    #             msg = "Added {} to the queue!".format(len(tracks))
+    #         else:
+    #             msg = "Added {} to the queue!".format(str(url))
 
-            if not await playlist.validate_voice_status():
-                TrackPlaylist.logger.debug("Validating voice status error")
-                return
+    #         if not await playlist.validate_voice_status():
+    #             TrackPlaylist.logger.debug("Validating voice status error")
+    #             return
 
-            if not ctx.guild.voice_client.is_playing():
-                await self.playlists[ctx.guild.id].play()
-                return
+    #         if not ctx.guild.voice_client.is_playing():
+    #             await self.playlists[ctx.guild.id].play()
+    #             return
             
-            await ctx.send(msg)
+    #         await ctx.send(msg)
         
         
     @commands.Cog.listener()

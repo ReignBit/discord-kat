@@ -300,43 +300,48 @@ class TrackPlaylist:
         Args:
             position (int): Position in the Track to seek to.
         """
-        if self.now_playing:
+        if self.current_track:
             self.guild.voice_client.pause()
             self.is_stopped = True
-            source = self.now_playing.seek(position)
+            source = self.current_track.seek(position)
             self.guild.voice_client.source = source
             self.guild.voice_client.resume()
             self.is_stopped = False
    
     async def now_playing(self):
-        if self.now_playing:
-            return f"Now playing: {self.now_playing.url}\nRequested by: {self.now_playing.requested_by.display_name}"
+        if self.current_track:
+            return f"Now playing: {self.current_track.url}\nRequested by: {self.current_track.requested_by.display_name}"
 
     async def shuffle(self):
         """Shuffles playlist"""
         random.shuffle(self.queue)
 
     async def disconnect(self):
+        """On disconnect command reset bot"""
         self.voice_channel = None
         self.status = PlayerStatus.NOT_PLAYING
         self.queue = []
         self.is_stopped = True
-        self.now_playing = None
+        self.current_track = None
 
     async def play(self) -> None:
         """Plays the next available track. Used to start the playlist."""
         await self._after_playback(None)
         
     async def get_queue(self):
+        """Get queue object"""
         return self.queue    
 
     async def get_now_playing(self):
-        return str(self.now_playing.title)
+        """Get current track title"""
+        return str(self.current_track.title)
 
     def stop(self):
         """Stop the player and clear the playlist."""
-        self.now_playing = None
+        self.current_track = None
         self.queue = []
+        self.status = PlayerStatus.NOT_PLAYING
+        self.is_stopped = True
         self.guild.voice_client.stop()
 
     async def skip(self) -> Track:
@@ -382,7 +387,7 @@ class TrackPlaylist:
 
         if self.length == 0:
             TrackPlaylist.logger.debug(f"{self.guild.id} no longer has Tracks in the queue.")
-            self.now_playing = None
+            self.current_track = None
             self.status = PlayerStatus.PLAYLIST_EMPTY
             return
 
@@ -393,49 +398,43 @@ class TrackPlaylist:
 
         # Has playlist, with tracks, not stopped, in voice
         track = self.pop()
-        self.now_playing = track
         self.current_track = track
-        # ctx.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
         
         self.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
-        await ctx.send(f"Now playing: {track.url}\nRequested by: {track.requested_by.display_name}")
-        
+        embed = discord.Embed(title=f"Now playing: {track.title}",url = f"{track.url}", description=f"Requested by: {track.requested_by.display_name}", color=16777215)
+        await ctx.send(embed = embed)
+                
         self.status = PlayerStatus.PLAYING
-        return self.now_playing
+        return self.current_track
 
     async def voice_state_update(self, before, after):
-        self.voice_channel = after.channel       
+        """Event for when bot gets disconnected/moved by force"""
+        self.voice_channel = after.channel  
         if self.voice_channel == None:#If bot get's disconnected by user
-            TrackPlaylist.logger.info(f"[{self.guild.id} | {self.guild.name}] Bot disconnected")
+            TrackPlaylist.logger.info(f"[{self.guild.id} | {self.guild.name}] Bot Disconnected from voice by force")
             self.voice_channel = None
             self.old_channel = before
             self.status = PlayerStatus.NOT_PLAYING
             self.queue = []
             self.is_stopped = True
-            self.now_playing = None
             self.current_track = None
             if self.guild.voice_client != None:
                 await self.guild.voice_client.disconnect()
+                            
         elif before.channel != None:#If bot moved
             TrackPlaylist.logger.info(f"[{self.guild.id} | {self.guild.name}] Bot moved")
             if(self.guild.voice_client == None):
                 await self.voice_channel.connect() 
-            # self.guild.voice_client.resume()  
-            # self.guild
-            # self.is_stopped = True
-            # if(self.guild.voice_client == None):
-            #     await self.voice_channel.connect()            
-            # if self.now_playing:
-            #     self.guild.voice_client.pause()
-            #     self.is_stopped = True
-            #     source = self.current_track.seek(self.current_track._source.ms)
-            #     self.guild.voice_client.source = source
-            #     self.guild.voice_client.resume()
-            #     self.is_stopped = False 
+            self.status = PlayerStatus.PLAYING
+            self.is_stopped = False                
+            self.guild.voice_client.resume()  
+            
         else:#initial join
             if(self.guild.voice_client == None):
                 await self.voice_channel.connect() 
-            self.guild.voice_client.resume()  
+            self.status = PlayerStatus.PLAYING
+            self.is_stopped = False                
+            self.guild.voice_client.resume()
      
     async def insert_next(self, url: str, requester: discord.Member):
         tracks = await Track.from_url(url, requester, loop=self.loop) # from_url returns list(Track)
@@ -455,12 +454,19 @@ class TrackPlaylist:
             self.queue.append(track)
             if self.guild.voice_client == None:
                 self.voice_channel.connect()
-        
+    
+    async def skip_queue(self, count):
+        if len(self.queue) < count:
+              return
+        count = int(count)
+        TrackPlaylist.logger.debug(count)
+        track = self.queue.pop(count-1)
+        return track.title
         
     def __repr__(self):
         return str({
             'status': self.status.name,
-            'now_playing': self.now_playing,
+            'now_playing': self.current_track,
             'length': self.length,
             'queue': [track for track in self.queue]
         })

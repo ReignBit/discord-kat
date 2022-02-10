@@ -1,0 +1,36 @@
+{
+    "error": {
+      "link" : {
+
+      }
+    },
+    "command": {},    
+    "embeds": {
+        "now_playing":{
+          "title": "${current_now} playing: ${title_of_song}",
+          "url" : "${youtube_url}",
+          "description": "[${completed_line}](${youtube_link})⚪${to_play_line}\n[${timestamp}]\nRequested by: ${author}",
+          "color": 16777215  
+          },
+        "queue":{
+          "title" : "Currently playing: ",
+          "description" : "[${currently_playing_title}](${youtube_url}) [${timestamp}]\nRequested by: ${author}",    
+          "color": 16777215,
+          "fields" : [
+            {
+              "name" : "Queue",
+              "value" : "${song_list}"
+            }
+          ]
+        },
+        "play":{
+            "title" : "Added ${track} to playlist",
+            "url" : "${youtube_url}",
+            "description" : "[${added_title}](${youtube_link}) [$duration]\nRequested by: ${author}",    
+            "color": 16777215
+        }
+
+    }
+
+
+}
