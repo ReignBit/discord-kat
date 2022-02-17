@@ -7,6 +7,8 @@ import time
 from inspect import trace
 from typing import Optional, Tuple, Union
 import math
+import requests
+import urllib
 
 import discord
 import youtube_dl
@@ -42,9 +44,25 @@ def convert_str_to_milli(str_time):
 
 def convert_sec_to_str(seconds):
     """Convert milliseconds to a timestamp."""
+    hour = 0
+    minute = 0
+    second = 0
     line = str(datetime.timedelta(seconds=seconds))
-    if int(line[0:line.find(':')]) == 0:
-        line = line[line.find(':')+1:]
+    line = line.replace(' ','')
+    if "day" in line:
+        hour = int(line[0:line.find("day")])*24
+        line = line[line.find(",")+1:]
+    hour += int(line[0:line.find(':')])
+    line = line[line.find(':')+1:]
+    minute = int(line[0:line.find(':')])
+    minute = str(minute) if minute > 10 else "0"+str(minute)
+    line = line[line.find(':')+1:]
+    second = int(line)
+    second = str(second) if second > 10 else "0"+str(second)
+    line = f"{minute}:{second}"
+    if hour != 0:
+        hour = str(hour) if hour > 10 else "0"+str(hour)
+        line = f"{hour}:" + line
     return line
 
 
@@ -70,6 +88,7 @@ class Newvoice(KatCog):
         async with ctx.typing():
             playlist = self.get_playlist(ctx)
             tracks = []
+
             try:
                 tracks = await playlist.insert(url, ctx.author)
             except:
@@ -300,27 +319,62 @@ class Newvoice(KatCog):
             embed = discord.Embed(title=f"Bye Bye :)", color=16777215)
             await ctx.send(embed = embed)
 
-    # @commands.command(aliases=['playnext'])
-    # async def play_next(self, ctx, *, url=""):
-    #     """Plays a song or playlist."""
-    #     async with ctx.typing():
-    #         playlist = self.get_playlist(ctx)
-    #         tracks = await playlist.insert_next(url, ctx.author)
+    @commands.command(aliases=['playnext'])
+    async def play_next(self, ctx, *, url=""):
+        """Adds a song or playlist to the front of the queue"""
+        async with ctx.typing():
+            playlist = self.get_playlist(ctx)
+            tracks = []
 
-    #         if len(tracks) > 1:
-    #             msg = "Added {} to the queue!".format(len(tracks))
-    #         else:
-    #             msg = "Added {} to the queue!".format(str(url))
-
-    #         if not await playlist.validate_voice_status():
-    #             TrackPlaylist.logger.debug("Validating voice status error")
-    #             return
-
-    #         if not ctx.guild.voice_client.is_playing():
-    #             await self.playlists[ctx.guild.id].play()
-    #             return
+            try:
+                tracks = await playlist.insert(url, ctx.author)
+            except:
+                embed = discord.Embed(title=f"That link doesn't seem to work:(", color=16777215)
+                await ctx.send(embed = embed)
+                return
+                           
+            await self.playlists[ctx.guild.id].update_channel(ctx.author.voice.channel)
             
-    #         await ctx.send(msg)
+            if not await playlist.validate_voice_status():
+                TrackPlaylist.logger.debug("Validating voice status error")
+                return
+            
+            if len(tracks) == 1:
+                song = tracks[0]
+                await ctx.send(
+                    embed = discord.Embed.from_dict(
+                        self.get_embed(
+                            "newvoice.embeds.play",
+                            track = url,
+                            youtube_url = song.url,
+                            added_title = song.title,
+                            youtube_link = song.url,
+                            duration = f"{convert_sec_to_str(song.duration)}",
+                            author = song.requested_by
+                        )
+                    )
+                ) 
+            elif len(tracks) > 1:
+                duration = 0
+                for track in tracks:
+                    duration += track.duration
+                await ctx.send(
+                    embed = discord.Embed.from_dict(
+                        self.get_embed(
+                            "newvoice.embeds.play",
+                            track = f"{len(tracks)} tracks",
+                            youtube_url = str(url),
+                            added_title = "",
+                            youtube_link = str(url),
+                            duration = f"Total duration: {convert_sec_to_str(duration)}",
+                            author = ctx.author.display_name
+                        )
+                    )
+                ) 
+            self.playlists[ctx.guild.id].is_stopped = False     
+            if not ctx.guild.voice_client.is_playing():                
+                await self.playlists[ctx.guild.id].play()
+                return
         
         
     @commands.Cog.listener()

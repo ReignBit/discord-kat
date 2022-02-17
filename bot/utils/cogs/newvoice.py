@@ -2,6 +2,7 @@ import asyncio
 from dis import disco
 import functools
 import json
+from locale import currency
 from re import T
 from typing import Optional, Tuple
 
@@ -238,6 +239,7 @@ class TrackPlaylist:
 
     def __init__(self, loop, guild: discord.Guild, ctx):
         self.queue          = []
+        self.played_queue   = []
         self.now_playing    = None
         self.is_stopped     = False
         self.ctx            = ctx
@@ -321,6 +323,7 @@ class TrackPlaylist:
         self.voice_channel = None
         self.status = PlayerStatus.NOT_PLAYING
         self.queue = []
+        self.played_queue   = []
         self.is_stopped = True
         self.current_track = None
 
@@ -340,6 +343,7 @@ class TrackPlaylist:
         """Stop the player and clear the playlist."""
         self.current_track = None
         self.queue = []
+        self.played_queue   = []
         self.status = PlayerStatus.NOT_PLAYING
         self.is_stopped = True
         self.guild.voice_client.stop()
@@ -397,9 +401,9 @@ class TrackPlaylist:
             return
 
         # Has playlist, with tracks, not stopped, in voice
-        track = self.pop()
+        track = self.pop()            
         self.current_track = track
-        
+        self.played_queue.append(self.current_track)
         self.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
         embed = discord.Embed(title=f"Now playing: {track.title}",url = f"{track.url}", description=f"Requested by: {track.requested_by.display_name}", color=16777215)
         await ctx.send(embed = embed)
@@ -416,6 +420,7 @@ class TrackPlaylist:
             self.old_channel = before
             self.status = PlayerStatus.NOT_PLAYING
             self.queue = []
+            self.played_queue   = []
             self.is_stopped = True
             self.current_track = None
             if self.guild.voice_client != None:
