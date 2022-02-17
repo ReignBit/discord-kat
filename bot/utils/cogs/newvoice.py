@@ -478,10 +478,30 @@ class TrackPlaylist:
         if len(self.queue) < count:
               return
         count = int(count)
-        TrackPlaylist.logger.debug(count)
+        
         track = self.queue.pop(count-1)
         return track.title
+    
+    async def swap(self, one, two):
+        one = one-1 if one > 0 else one
+        two = two-1 if two > 0 else two
+        track = self.queue[one]
+        self.queue[one] = self.queue[two]
+        self.queue[two] = track
+        return [self.queue[two].title, self.queue[one].title]
         
+    async def total_duration(self):
+        try:
+            if self.queue == []:
+                return 0
+            total = 0
+            for track in self.queue:
+                total += track.duration
+            return total
+        except:
+            TrackPlaylist.logger.debug("total_duration error")
+            return 0
+            
     def __repr__(self):
         return str({
             'status': self.status.name,

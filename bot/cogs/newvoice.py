@@ -263,6 +263,8 @@ class Newvoice(KatCog):
                         youtube_url = self.playlists[id].current_track.url,
                         timestamp = convert_sec_to_str(self.playlists[id].current_track.duration),
                         author = ctx.author.display_name,
+                        queue_count = len(self.playlists[id].queue),
+                        total_duration = convert_sec_to_str(await self.playlists[id].total_duration()),
                         song_list = str(line)
                     )
             ))    
@@ -347,21 +349,55 @@ class Newvoice(KatCog):
                             currently_playing_title = self.playlists[id].current_track.title,
                             youtube_url = self.playlists[id].current_track.url,
                             timestamp = convert_sec_to_str(self.playlists[id].current_track.duration),
-                            author = ctx.author.nick,
-                            queue_count = len(self.queue),
+                            author = ctx.author.display_name,
+                            queue_count = len(self.playlists[id].queue),
+                            total_duration = convert_sec_to_str(await self.playlists[id].total_duration()),
                             song_list = str(line)
                         )
                 ))
-        except:
+        except Exception as err:
             TrackPlaylist.logger.debug("Queue command error")
+            TrackPlaylist.logger.debug(err)
             embed = discord.Embed(title=f"Queue", description=f"Nothing in queue", color=16777215)
             await ctx.send(embed=embed)
             return
-
+        
     @commands.command()
-    async def debug(self, ctx):
-        await ctx.send("```py\n%s\n```" % self.get_playlist(ctx))
-
+    async def swap(self, ctx, *, numbers=None):
+        """Skip the current song."""
+        async with ctx.typing():
+            id = ctx.guild.id
+            if self.playlists.get(id):
+                TrackPlaylist.logger.debug(numbers)
+                if " " not in numbers:
+                    embed = discord.Embed(title=f"Invalid numbers given. Example format: {ctx.prefix}move 2 1", color=16777215)
+                    await ctx.send(embed=embed)
+                    return
+                one = numbers[0:numbers.find(' ')]
+                numbers = numbers[numbers.find(' ')+1:]
+                two = numbers
+                
+                try:
+                    one = int(one)
+                    two = int(two)
+                except:
+                    embed = discord.Embed(title=f"Invalid numbers given. Example format: {ctx.prefix}move 2 1", color=16777215)
+                    await ctx.send(embed=embed)
+                    return
+                size = len(self.playlists[id].queue)
+                if one > size or one < 0:
+                    embed = discord.Embed(title=f"The First number is invalid", color=16777215)
+                    await ctx.send(embed=embed)
+                    return  
+                if two > size or two < 0:
+                    embed = discord.Embed(title=f"The Second number is invalid", color=16777215)
+                    await ctx.send(embed=embed)
+                    return 
+                titles = await self.playlists[id].swap(one,two)
+                embed = discord.Embed(title=f"{one}. {titles[0]} swapped with {two}. {titles[1]}", color=16777215)
+                await ctx.send(embed=embed)
+                return 
+                
     @commands.command(aliases=['leave','dc','kys'])
     async def disconnect(self, ctx):
         id = ctx.guild.id
