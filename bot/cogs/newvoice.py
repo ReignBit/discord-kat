@@ -157,25 +157,50 @@ class Newvoice(KatCog):
             await ctx.send(embed = embed)
     
     @commands.command(aliases=['s'])
-    async def skip(self, ctx, count:str=None):
+    async def skip(self, ctx, *, count=None):
         """Skip the current song."""
-        id = ctx.guild.id
-        TrackPlaylist.logger.debug(count)
-        if self.playlists.get(id):
-            if self.playlists[id].current_track:
-                if(count == None):
-                    await self.playlists[id].skip()
-                    embed = discord.Embed(title=f"Skipped current song", color=16777215)
-                    await ctx.send(embed = embed)
-                    return
-                # ctx.send(count)
-                # title = await self.playlists[id].skip_queue()
+        async with ctx.typing():
+            if count:
+                count = str(count)
+            id = ctx.guild.id
+            if self.playlists.get(id):
+                if self.playlists[id].current_track:
+                    if(count == None):#normal skip
+                        await self.playlists[id].skip()
+                        embed = discord.Embed(title=f"Skipped current song", color=16777215)
+                        await ctx.send(embed = embed)
+                        return
+                    else:#skip to song in queue
+                        try:
+                            count = int(count)
+                        except:#if number given is invalid ie. 't' instead of '5'
+                            embed = discord.Embed(title=f"Please enter a valid number to skip to", color=16777215)
+                            await ctx.send(embed = embed)
+                            return
+                        if(count > len(self.playlists[id].queue)):#number given is to large
+                            embed = discord.Embed(title=f"Number to skip to is to large", color=16777215)
+                            await ctx.send(embed = embed)
+                            return
+                        if(count < 0):#number given is to small
+                            embed = discord.Embed(title=f"Number to skip to is to small", color=16777215)
+                            await ctx.send(embed = embed)
+                            return
+                        
+                        title = f"Skipped to number {count}"
+                        for x in range(count-1):
+                            await self.playlists[id].remove_queue(1)
+                        
+                        await self.playlists[id].skip()
+                        if self.playlists[id].queue == [] or count == 0 or count == 1:
+                            title = "Skipped!"
+                        embed = discord.Embed(title=title, color=16777215)
+                        await ctx.send(embed = embed)
+                        return
                 
     @commands.command()
     async def remove(self, ctx, count:str=None):
         """Remove a song in the queue"""
         id = ctx.guild.id
-        TrackPlaylist.logger.debug(count)
         if self.playlists.get(id):
             if(count is None):
                     embed = discord.Embed(title=f"Please give the number of the song in the queue you would like to remove", color=16777215)
@@ -295,36 +320,43 @@ class Newvoice(KatCog):
     @commands.command(aliases=['qeueu','q'])
     async def queue(self, ctx):
         id = ctx.guild.id
-        if self.playlists.get(id):
-            if self.playlists[id].is_stopped or self.queue == []:
-                embed = discord.Embed(title=f"Queue", description=f"Nothing in queue", color=16777215)
-                await ctx.send(embed=embed)
-                return
-            
-            line = ""
-            counter = 1
-            #
-            for track in await self.playlists[id].get_queue():
-                title = str(track.title).replace('"',"").replace("'","").replace("$","")
-                line += f"{counter}. {title} | duration: [{convert_sec_to_str(track.duration)}]"                
-                if counter == 10:
-                    break 
-                else:
-                    counter += 1
-                    line += "\n"
-            if await self.playlists[id].get_queue() == []:
-                line += "Nothing in queue"
-            await ctx.send(
-                embed = discord.Embed.from_dict(
-                    self.get_embed(
-                        "newvoice.embeds.queue",
-                        currently_playing_title = self.playlists[id].current_track.title,
-                        youtube_url = self.playlists[id].current_track.url,
-                        timestamp = convert_sec_to_str(self.playlists[id].current_track.duration),
-                        author = ctx.author.nick,
-                        song_list = str(line)
-                    )
-            ))
+        try:
+            if self.playlists.get(id):
+                if self.playlists[id].is_stopped or self.playlists[id].queue == []:
+                    embed = discord.Embed(title=f"Queue", description=f"Nothing in queue", color=16777215)
+                    await ctx.send(embed=embed)
+                    return
+                
+                line = ""
+                counter = 1
+                #
+                for track in await self.playlists[id].get_queue():
+                    title = str(track.title).replace('"',"").replace("'","").replace("$","")
+                    line += f"{counter}. {title} | duration: [{convert_sec_to_str(track.duration)}]"                
+                    if counter == 10:
+                        break 
+                    else:
+                        counter += 1
+                        line += "\n"
+                if await self.playlists[id].get_queue() == []:
+                    line += "Nothing in queue"
+                await ctx.send(
+                    embed = discord.Embed.from_dict(
+                        self.get_embed(
+                            "newvoice.embeds.queue",
+                            currently_playing_title = self.playlists[id].current_track.title,
+                            youtube_url = self.playlists[id].current_track.url,
+                            timestamp = convert_sec_to_str(self.playlists[id].current_track.duration),
+                            author = ctx.author.nick,
+                            queue_count = len(self.queue),
+                            song_list = str(line)
+                        )
+                ))
+        except:
+            TrackPlaylist.logger.debug("Queue command error")
+            embed = discord.Embed(title=f"Queue", description=f"Nothing in queue", color=16777215)
+            await ctx.send(embed=embed)
+            return
 
     @commands.command()
     async def debug(self, ctx):

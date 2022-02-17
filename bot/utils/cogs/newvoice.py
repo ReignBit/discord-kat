@@ -24,7 +24,7 @@ import random
 # 5. Go through and test all combinations of commands and states
 # 6. Save song lists/queues to play later
 # 7. Move command
-# 8. Skip to song in queue (number)
+# 8. Skip to song in queue (number)✔
 #########################################################
 
 
@@ -474,6 +474,7 @@ class TrackPlaylist:
                 self.voice_channel.connect()
     
     async def remove_queue(self, count):
+        """Removes song from queue. count is place in queue starting at 1. ie. start of queue is 1 not 0"""
         if len(self.queue) < count:
               return
         count = int(count)

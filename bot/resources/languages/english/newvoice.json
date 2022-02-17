@@ -18,7 +18,7 @@
           "color": 16777215,
           "fields" : [
             {
-              "name" : "Queue",
+              "name" : "Queue [count: ${queue_count}]",
               "value" : "${song_list}"
             }
           ]
