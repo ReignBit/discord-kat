@@ -269,6 +269,19 @@ class TrackPlaylist:
         [self.queue.append(track) for track in tracks]
         return tracks
 
+    async def insert_front(self, url: str, requester: discord.Member) -> list[Track]:
+        """Enqueue a new Track instance with url.
+
+        Args:
+            url (str): URL of the video to insert to queue.
+
+        Returns:
+            list[Track]: Tracks extracted from the url.
+        """
+        tracks = await Track.from_url(url, requester, loop=self.loop) # from_url returns list(Track)
+        [self.queue.insert(0,track) for track in reversed(tracks)]
+        return tracks
+
     async def validate_voice_status(self):
         
         #Check if kat  has a voice channel/voice client
@@ -460,7 +473,7 @@ class TrackPlaylist:
             if self.guild.voice_client == None:
                 self.voice_channel.connect()
     
-    async def skip_queue(self, count):
+    async def remove_queue(self, count):
         if len(self.queue) < count:
               return
         count = int(count)

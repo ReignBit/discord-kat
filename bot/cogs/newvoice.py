@@ -82,7 +82,7 @@ class Newvoice(KatCog):
             self.playlists[ctx.guild.id] = player
             return player
 
-    @commands.command()
+    @commands.command(aliases=['p'])
     async def play(self, ctx, *, url=""):
         """Plays a song or playlist."""
         async with ctx.typing():
@@ -156,10 +156,11 @@ class Newvoice(KatCog):
             embed = discord.Embed(title=f"Stopped the music", color=16777215)
             await ctx.send(embed = embed)
     
-    @commands.command()
+    @commands.command(aliases=['s'])
     async def skip(self, ctx, count:str=None):
         """Skip the current song."""
         id = ctx.guild.id
+        TrackPlaylist.logger.debug(count)
         if self.playlists.get(id):
             if self.playlists[id].current_track:
                 if(count == None):
@@ -170,7 +171,26 @@ class Newvoice(KatCog):
                 # ctx.send(count)
                 # title = await self.playlists[id].skip_queue()
                 
-                    
+    @commands.command()
+    async def remove(self, ctx, count:str=None):
+        """Remove a song in the queue"""
+        id = ctx.guild.id
+        TrackPlaylist.logger.debug(count)
+        if self.playlists.get(id):
+            if(count is None):
+                    embed = discord.Embed(title=f"Please give the number of the song in the queue you would like to remove", color=16777215)
+                    await ctx.send(embed = embed)
+                    return
+            try:
+                count = int(count)
+            except:
+                    embed = discord.Embed(title=f"Please enter a valid number to remove from the queue", color=16777215)
+                    await ctx.send(embed = embed)
+                    return   
+            
+            track = await self.playlists[id].remove_queue(count)   
+            embed = discord.Embed(title=f"{track} removed from queue", color=16777215)
+            await ctx.send(embed = embed)                
     
     @commands.command()
     async def seek(self, ctx, pos="0"):
@@ -319,7 +339,7 @@ class Newvoice(KatCog):
             embed = discord.Embed(title=f"Bye Bye :)", color=16777215)
             await ctx.send(embed = embed)
 
-    @commands.command(aliases=['playnext'])
+    @commands.command(aliases=['playnext','pn'])
     async def play_next(self, ctx, *, url=""):
         """Adds a song or playlist to the front of the queue"""
         async with ctx.typing():
@@ -327,7 +347,7 @@ class Newvoice(KatCog):
             tracks = []
 
             try:
-                tracks = await playlist.insert(url, ctx.author)
+                tracks = await playlist.insert_front(url, ctx.author)
             except:
                 embed = discord.Embed(title=f"That link doesn't seem to work:(", color=16777215)
                 await ctx.send(embed = embed)
