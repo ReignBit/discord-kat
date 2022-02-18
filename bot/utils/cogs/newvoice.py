@@ -483,6 +483,7 @@ class TrackPlaylist:
         return track.title
     
     async def swap(self, one, two):
+        """Swap 2 tracks in the queue. one/two is place in queue starting at 1. ie. start of queue is 1 not 0"""
         one = one-1 if one > 0 else one
         two = two-1 if two > 0 else two
         track = self.queue[one]

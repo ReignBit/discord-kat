@@ -368,20 +368,18 @@ class Newvoice(KatCog):
         async with ctx.typing():
             id = ctx.guild.id
             if self.playlists.get(id):
-                TrackPlaylist.logger.debug(numbers)
-                if " " not in numbers:
-                    embed = discord.Embed(title=f"Invalid numbers given. Example format: {ctx.prefix}move 2 1", color=16777215)
+                if " " not in numbers or ',' in numbers:
+                    embed = discord.Embed(title=f"Invalid numbers given. Example format: {ctx.prefix}swap 2 1", color=16777215)
                     await ctx.send(embed=embed)
                     return
                 one = numbers[0:numbers.find(' ')]
                 numbers = numbers[numbers.find(' ')+1:]
-                two = numbers
-                
+                two = numbers                
                 try:
                     one = int(one)
                     two = int(two)
                 except:
-                    embed = discord.Embed(title=f"Invalid numbers given. Example format: {ctx.prefix}move 2 1", color=16777215)
+                    embed = discord.Embed(title=f"Invalid numbers given. Example format: {ctx.prefix}swap 2 1", color=16777215)
                     await ctx.send(embed=embed)
                     return
                 size = len(self.playlists[id].queue)
