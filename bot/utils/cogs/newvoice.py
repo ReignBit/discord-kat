@@ -2,6 +2,7 @@ import asyncio
 from dis import disco
 import functools
 import json
+from locale import currency
 from re import T
 from typing import Optional, Tuple
 
@@ -23,7 +24,7 @@ import random
 # 5. Go through and test all combinations of commands and states
 # 6. Save song lists/queues to play later
 # 7. Move command
-# 8. Skip to song in queue (number)
+# 8. Skip to song in queue (number)✔
 #########################################################
 
 
@@ -238,6 +239,7 @@ class TrackPlaylist:
 
     def __init__(self, loop, guild: discord.Guild, ctx):
         self.queue          = []
+        self.played_queue   = []
         self.now_playing    = None
         self.is_stopped     = False
         self.ctx            = ctx
@@ -265,6 +267,19 @@ class TrackPlaylist:
         """
         tracks = await Track.from_url(url, requester, loop=self.loop) # from_url returns list(Track)
         [self.queue.append(track) for track in tracks]
+        return tracks
+
+    async def insert_front(self, url: str, requester: discord.Member) -> list[Track]:
+        """Enqueue a new Track instance with url.
+
+        Args:
+            url (str): URL of the video to insert to queue.
+
+        Returns:
+            list[Track]: Tracks extracted from the url.
+        """
+        tracks = await Track.from_url(url, requester, loop=self.loop) # from_url returns list(Track)
+        [self.queue.insert(0,track) for track in reversed(tracks)]
         return tracks
 
     async def validate_voice_status(self):
@@ -321,6 +336,7 @@ class TrackPlaylist:
         self.voice_channel = None
         self.status = PlayerStatus.NOT_PLAYING
         self.queue = []
+        self.played_queue   = []
         self.is_stopped = True
         self.current_track = None
 
@@ -340,6 +356,7 @@ class TrackPlaylist:
         """Stop the player and clear the playlist."""
         self.current_track = None
         self.queue = []
+        self.played_queue   = []
         self.status = PlayerStatus.NOT_PLAYING
         self.is_stopped = True
         self.guild.voice_client.stop()
@@ -397,9 +414,9 @@ class TrackPlaylist:
             return
 
         # Has playlist, with tracks, not stopped, in voice
-        track = self.pop()
+        track = self.pop()            
         self.current_track = track
-        
+        self.played_queue.append(self.current_track)
         self.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
         embed = discord.Embed(title=f"Now playing: {track.title}",url = f"{track.url}", description=f"Requested by: {track.requested_by.display_name}", color=16777215)
         await ctx.send(embed = embed)
@@ -416,6 +433,7 @@ class TrackPlaylist:
             self.old_channel = before
             self.status = PlayerStatus.NOT_PLAYING
             self.queue = []
+            self.played_queue   = []
             self.is_stopped = True
             self.current_track = None
             if self.guild.voice_client != None:
@@ -455,14 +473,36 @@ class TrackPlaylist:
             if self.guild.voice_client == None:
                 self.voice_channel.connect()
     
-    async def skip_queue(self, count):
+    async def remove_queue(self, count):
+        """Removes song from queue. count is place in queue starting at 1. ie. start of queue is 1 not 0"""
         if len(self.queue) < count:
               return
         count = int(count)
-        TrackPlaylist.logger.debug(count)
+        
         track = self.queue.pop(count-1)
         return track.title
+    
+    async def swap(self, one, two):
+        """Swap 2 tracks in the queue. one/two is place in queue starting at 1. ie. start of queue is 1 not 0"""
+        one = one-1 if one > 0 else one
+        two = two-1 if two > 0 else two
+        track = self.queue[one]
+        self.queue[one] = self.queue[two]
+        self.queue[two] = track
+        return [self.queue[two].title, self.queue[one].title]
         
+    async def total_duration(self):
+        try:
+            if self.queue == []:
+                return 0
+            total = 0
+            for track in self.queue:
+                total += track.duration
+            return total
+        except:
+            TrackPlaylist.logger.debug("total_duration error")
+            return 0
+            
     def __repr__(self):
         return str({
             'status': self.status.name,
