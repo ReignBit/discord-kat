@@ -4,7 +4,10 @@ import functools
 import json
 from locale import currency
 from re import T
+import re
+import codecs
 from typing import Optional, Tuple
+import datetime
 
 from subprocess import STDOUT
 
@@ -20,11 +23,15 @@ import random
 # 1. Seeking is broken completely ✔                                 white noise weirdness if you seek too much?
 # 2. Playing single song (no playlist) is broken ✔
 # 3. Need to test if other providers still work (newsground, other) 
-# 4. Replace all ctx.send() with appropriate get_embed and get_response
-# 5. Go through and test all combinations of commands and states
+# 4. Replace all ctx.send() with appropriate get_embed and get_response✔
+# 5. Go through and test all combinations of commands and states✔
 # 6. Save song lists/queues to play later
-# 7. Move command
+# 7. Move command✔
 # 8. Skip to song in queue (number)✔
+# 9. " in discord username breaks when printing
+# 10. Auto disconnect after x amount of time not playing✔
+# 11. Add spotify support
+# 12. Add simulatorradio support
 #########################################################
 
 
@@ -45,7 +52,7 @@ ytdl = youtube_dl.YoutubeDL(
     'skip_download': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+    'source_address': '0.0.0.0', # bind to ipv4 since ipv6 addresses cause issues sometimes
     }
 )
 
@@ -64,12 +71,47 @@ ytdl_deep = youtube_dl.YoutubeDL(
     'skip_download': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+    'source_address': '0.0.0.0', # bind to ipv4 since ipv6 addresses cause issues sometimes
     }
 )
 
+class Timer():
+    logger = None
+    def __init__(self):
+        self.object = None
+        self.time = -1
+        self.running = False
+        
+    async def event(self):
+        if object == None:
+            Timer.logger.warn("Timer object is None")
+            return
+        await self.object.timer_event()
+    
+    async def start(self,object ,time = 0.5*60*60):
+        self.time = time
+        self.object = object
+        self.running = True
+        while self.running:
+            if(self.time == 0):
+                await self.event()
+                self.running = False
+                break
+            if(self.time < 0):
+                Timer.logger.warn("Timer error | time > 0")
+                self.running = False
+                break
+            await asyncio.sleep(1)
+            self.time -= 1
+    
+    async def interrupt(self):
+        if self.time == -1 and not self.running:
+            return
+        self.time = -1
+        self.running = False
 
 def set_logger(logger):
+    Timer.logger = logger
     Track.logger = logger
     TrackPlaylist.logger = logger
 
@@ -195,6 +237,7 @@ class Track:
 
         # TODO: See about implementing some kind of caching of extract_info() based on expiretime on the source url.
         #       This would stop us requiring to extract info everytime we seek in a short period, possibly reducing time to seek.
+        
         info = ytdl.extract_info(self.url, download=False)
         self.source = TrackSource.from_url(info['url'], ffmpeg_options)
         return self.source
@@ -202,7 +245,7 @@ class Track:
 
     def seek(self, position: int) -> TrackSource:
         """Seek to a position in the Track (ms)"""
-        Track.logger.debug(f"Seeking to position: {position}")
+        Track.logger.info(f"[GUILD {self.guild.id} | {self.guild.name}] Seeking to position: {position}")
         self.generate_source(position)
         self.ms = position
         return self.source
@@ -238,16 +281,22 @@ class TrackPlaylist:
     logger = None
 
     def __init__(self, loop, guild: discord.Guild, ctx):
-        self.queue          = []
-        self.played_queue   = []
-        self.now_playing    = None
-        self.is_stopped     = False
-        self.ctx            = ctx
-        self.guild          = guild
-        self.loop           = loop
-        self.voice_channel  = ctx.author.voice.channel
-        self.current_track  = None
-        self.old_channel    = None
+        self.queue                  = []
+        self.played_queue           = []
+        self.now_playing            = None
+        self.is_stopped             = False
+        self.ctx                    = ctx
+        self.guild                  = guild
+        self.loop                   = loop
+        self.voice_channel          = ctx.author.voice.channel
+        self.current_track          = None
+        self.old_channel            = None
+        self.timer                  = Timer()
+        self.timed_out              = False
+        self.last_queue_msg         = None
+        self.now_playing_msg        = None
+        self.queue_back_count       = 0
+        self.queue_foward_count     = 0
         
         self.status         = PlayerStatus.PLAYLIST_EMPTY
 
@@ -255,6 +304,26 @@ class TrackPlaylist:
     def length(self):
         return len(self.queue)
 
+    async def timer_event(self):
+        """ On timer event trigger disconnect bot from voice
+
+        """
+        if(self.guild.voice_client):
+            await self.guild.voice_client.disconnect()
+        self.voice_channel = None
+        self.status = PlayerStatus.NOT_PLAYING
+        self.queue = []
+        self.played_queue   = []
+        self.is_stopped = True
+        self.current_track = None
+        self.last_queue_msg = None
+        self.timed_out = True
+        
+    async def get_played_queue(self, position = 0):
+        if self.played_queue == []:
+            return self.played_queue
+        else:
+            return self.played_queue[1+(position*5):]
 
     async def insert(self, url: str, requester: discord.Member) -> list[Track]:
         """Enqueue a new Track instance with url.
@@ -265,6 +334,7 @@ class TrackPlaylist:
         Returns:
             list[Track]: Tracks extracted from the url.
         """
+        
         tracks = await Track.from_url(url, requester, loop=self.loop) # from_url returns list(Track)
         [self.queue.append(track) for track in tracks]
         return tracks
@@ -360,6 +430,7 @@ class TrackPlaylist:
         self.status = PlayerStatus.NOT_PLAYING
         self.is_stopped = True
         self.guild.voice_client.stop()
+        self.last_queue_msg = None
 
     async def skip(self) -> Track:
         """Skips the current song, if one is playing, returns the next Track"""
@@ -403,24 +474,79 @@ class TrackPlaylist:
             return
 
         if self.length == 0:
-            TrackPlaylist.logger.debug(f"{self.guild.id} no longer has Tracks in the queue.")
+            TrackPlaylist.logger.info(f"[GUILD {self.guild.name} | {self.guild.id}] Empty queue. Starting timer")
             self.current_track = None
             self.status = PlayerStatus.PLAYLIST_EMPTY
+            self.last_queue_msg = None
+            # await self.timer.start(self, 0.5*60*60)
+            await self.timer.start(self)
             return
 
         if self.is_stopped:
-            TrackPlaylist.logger.debug(f"{self.guild.id} is_stopped=True")
+            TrackPlaylist.logger.warn(f"[GUILD {self.guild.id} | {self.guild.name}] is_stopped=True")
             self.status = PlayerStatus.PAUSED
+            # await self.timer.start(self, 0.5*60*60)
+            await self.timer.start(self)
             return
 
         # Has playlist, with tracks, not stopped, in voice
+        await self.timer.interrupt()
+        self.timed_out = False
         track = self.pop()            
         self.current_track = track
+        track_error = False
+    
+        try:
+            self.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
+        except:
+            track_error = True
+            while(track_error):
+                embed = discord.Embed(title=f"Error playing: {track.title}",url = f"{track.url}", description=f"Requested by: {await self.string_fix(track.requested_by.display_name)}\nSkipping to next track!", color=16777215)
+                await self.ctx.send(embed=embed)
+                TrackPlaylist.logger.warn(f"[GUILD {self.guild.id} | {self.guild.name}] Track playing error")
+                if error:
+                    TrackPlaylist.logger.warn(f"[GUILD {self.guild.id} | {self.guild.name}] {error}")
+                    self.status = PlayerStatus.ERRORED
+                    raise error
+                if not await self.validate_voice_status():
+                    return
+                if self.length == 0:
+                    TrackPlaylist.logger.info(f"[GUILD {self.guild.name} | {self.guild.id}] Empty queue. Starting timer")
+                    self.current_track = None
+                    self.status = PlayerStatus.PLAYLIST_EMPTY
+                    self.last_queue_msg = None
+                    await self.timer.start(self)
+                    return
+                if self.is_stopped:
+                    TrackPlaylist.logger.warn(f"[GUILD {self.guild.id} | {self.guild.name}] is_stopped=True")
+                    self.status = PlayerStatus.PAUSED
+                    await self.timer.start(self)
+                    return            
+                await self.timer.interrupt()
+                track = self.pop()            
+                self.current_track = track  
+                self.guild.voice_client.resume()
+                try:
+                    self.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))   
+                except:
+                    embed = discord.Embed(title=f"Error playing: {track.title}",url = f"{track.url}", description=f"Requested by: {await self.string_fix(track.requested_by.display_name)}\nSkipping to next track!", color=16777215)
+                    await self.ctx.send(embed=embed)
+                    TrackPlaylist.logger.warn(f"[GUILD {self.guild.id} | {self.guild.name}] Track playing error")
+                    track_error = True
+                    continue
+                track_error = False       
+        display = str(track.requested_by.display_name).replace('"',"'")
         self.played_queue.append(self.current_track)
-        self.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
-        embed = discord.Embed(title=f"Now playing: {track.title}",url = f"{track.url}", description=f"Requested by: {track.requested_by.display_name}", color=16777215)
-        await ctx.send(embed = embed)
-                
+        embed = discord.Embed(title=f"Now playing: {track.title}",url = f"{track.url}", description=f"Requested by: {display}\nduration: [{self.convert_sec_to_str(track.duration)}]", color=16777215)
+        if self.now_playing_msg == None:
+            msg = await ctx.send(embed = embed)
+            self.now_playing_msg = msg
+        elif ctx.channel.last_message.id == self.now_playing_msg.id:
+            
+            await ctx.channel.last_message.edit(embed=embed)
+        else:
+            msg = await ctx.send(embed = embed)
+            self.now_playing_msg = msg
         self.status = PlayerStatus.PLAYING
         return self.current_track
 
@@ -436,22 +562,30 @@ class TrackPlaylist:
             self.played_queue   = []
             self.is_stopped = True
             self.current_track = None
+            self.last_queue_msg = None
             if self.guild.voice_client != None:
                 await self.guild.voice_client.disconnect()
                             
         elif before.channel != None:#If bot moved
             TrackPlaylist.logger.info(f"[{self.guild.id} | {self.guild.name}] Bot moved")
+            if self.timed_out == True:
+                return
             if(self.guild.voice_client == None):
                 await self.voice_channel.connect() 
             self.status = PlayerStatus.PLAYING
-            self.is_stopped = False                
+            self.is_stopped = False
+            self.last_queue_msg = None                
             self.guild.voice_client.resume()  
             
         else:#initial join
+            TrackPlaylist.logger.info(f"[{self.guild.id} | {self.guild.name}] Initial join")
+            if self.timed_out == True:
+                return
             if(self.guild.voice_client == None):
                 await self.voice_channel.connect() 
             self.status = PlayerStatus.PLAYING
-            self.is_stopped = False                
+            self.is_stopped = False  
+            self.last_queue_msg = None              
             self.guild.voice_client.resume()
      
     async def insert_next(self, url: str, requester: discord.Member):
@@ -500,9 +634,60 @@ class TrackPlaylist:
                 total += track.duration
             return total
         except:
-            TrackPlaylist.logger.debug("total_duration error")
+            TrackPlaylist.logger.warn("total_duration error")
             return 0
-            
+        
+    async def string_fix(self, line):        
+        try:
+            line = str(line).replace('"',"'").replace('\\',str(r'\\' + r'\\'))
+            # temp = ""
+            # symbol = "[@_!#$%^&*()<>?/\|}{~:]'"     
+            # for i,char in enumerate(str(line)):
+            #     if char in symbol:
+            #         temp += "\\" + char
+            #     else:
+            #         temp += char
+                    
+            # temp = re.sub(r'([\.\\\+\*\?\[\^\]\$\(\)\{\}\!\<\>\|\:\-])', r'\\\1', temp)
+            # temp = re.escape(temp)
+            # TrackPlaylist.logger.debug(temp.decode())
+            # temp = temp.replace('"','').replace("'","").replace('{','').replace('}','')
+            # TrackPlaylist.logger.debug(temp)
+            # temp = codecs.decode(temp,'unicode_escape')
+            # temp = temp.encode('utf-8').decode('unicode_escape')
+            return line
+        except Exception as err:
+            TrackPlaylist.logger.warn(f"[GUILD {self.guild.id} | {self.guild.name}] String fix error: {line}\n{err}")            
+            return line
+        
+    def convert_sec_to_str(self, seconds):
+        """Convert milliseconds to a timestamp."""
+        hour = 0
+        minute = 0
+        second = 0
+        line = str(datetime.timedelta(seconds=seconds))
+        line = line.replace(' ','')
+        if "day" in line:
+            hour = int(line[0:line.find("day")])*24
+            line = line[line.find(",")+1:]
+        hour += int(line[0:line.find(':')])
+        line = line[line.find(':')+1:]
+        minute = int(line[0:line.find(':')])
+        minute = str(minute) if minute > 10 else "0"+str(minute)
+        line = line[line.find(':')+1:]
+        second = int(line)
+        second = str(second) if second > 10 else "0"+str(second)
+        line = f"{minute}:{second}"
+        if hour != 0:
+            hour = str(hour) if hour > 10 else "0"+str(hour)
+            line = f"{hour}:" + line
+        return line      
+  
+    async def get_queue_list(self):
+        if self.queue_back_count > 0:                
+            self.queue_back_count
+            self.queue_foward_count
+  
     def __repr__(self):
         return str({
             'status': self.status.name,

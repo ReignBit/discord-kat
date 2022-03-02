@@ -116,12 +116,13 @@ class Fun(KatCog):
 
         if date.weekday():  # is monday
             if "megu_done" not in os.listdir("bot/resources/days/"):
-                await channel.send(
-                    self.dayresponse[0], file=discord.File("bot/resources/days/0.png")
-                )
+                if channel != None:
+                    await channel.send(
+                        self.dayresponse[0], file=discord.File("bot/resources/days/0.png")
+                    )
 
-                write_resource("days/megu_done", "1")
-                self.log.info("It's megumonday!")
+                    write_resource("days/megu_done", "1")
+                    self.log.info("It's megumonday!")
         else:
             try:
                 os.remove("bot/resources/days/megu_done")
