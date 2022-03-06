@@ -89,6 +89,7 @@ class Newvoice(KatCog):
             id = ctx.guild.id
             # if not self.playlists[id]:
             #     return
+            playlist = self.get_playlist(ctx)
             if url == "":#play after error
                 if ctx.guild.voice_client and self.playlists[id].current_track:
                     ctx.guild.voice_client.resume()
@@ -96,13 +97,19 @@ class Newvoice(KatCog):
                     self.playlists[id].timed_out = False
                     self.playlists[id].is_stopped = False
                     TrackPlaylist.logger.info(f"[GUILD {self.guild.name} | {self.guild.id}] Resumed playing")
-            playlist = self.get_playlist(ctx)
             tracks = []
             self.playlists[ctx.guild.id].last_queue_msg = None
             try:
                 tracks = await playlist.insert(url, ctx.author)
                 self.playlists[ctx.guild.id].timed_out = False
             except:
+                try:
+                        tracks = await playlist.insert(url, ctx.author)
+                        self.playlists[ctx.guild.id].timed_out = False
+                except:
+                    embed = discord.Embed(title=f"That link doesn't seem to work:(", color=16777215)
+                    await ctx.send(embed = embed)
+                    return
                 embed = discord.Embed(title=f"That link doesn't seem to work:(", color=16777215)
                 await ctx.send(embed = embed)
                 return
@@ -350,7 +357,7 @@ class Newvoice(KatCog):
                     currently_playing_title = self.playlists[id].current_track.title,
                     youtube_url = self.playlists[id].current_track.url,
                     timestamp = convert_sec_to_str(self.playlists[id].current_track.duration),
-                    author = await self.playlists[id].string_fix(ctx.author.display_name),
+                    author = await self.playlists[id].string_fix(self.playlists[id].current_track.requested_by.display_name),
                     queue_count = len(self.playlists[id].queue),
                     total_duration = convert_sec_to_str(await self.playlists[id].total_duration()),
                     song_list = str(line)
@@ -487,7 +494,16 @@ class Newvoice(KatCog):
                 if not ctx.guild.voice_client.is_playing():                
                     await self.playlists[ctx.guild.id].play()
                     return
-        
+    
+    @commands.command(aliases=['simulator'])
+    async def simulator_radio_add(self, ctx):
+        """Clears the current queue."""
+        id = ctx.guild.id
+        playlist = self.get_playlist(ctx)
+        await self.playlists[id].simulator_radio_add(ctx)
+        embed = discord.Embed(title=f"Adding Simulator Radio to the queue!", color=16777215)
+        await ctx.send(embed = embed)  
+        await self.playlists[id].play()
         
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):       

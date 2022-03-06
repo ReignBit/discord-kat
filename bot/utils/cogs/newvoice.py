@@ -145,7 +145,7 @@ class TrackSource(discord.PCMVolumeTransformer):
 
 class Track:
     logger = None
-    def __init__(self, url, requested_by: discord.Member, data: dict, loop=None):
+    def __init__(self, url, requested_by: discord.Member, data: dict, loop=None, source=None):
         """Information about a song/video in a playlist.
 
         source: TrackSource - Contains information about audio stream and duration
@@ -170,6 +170,8 @@ class Track:
 
         self.readable       = f"{self.title} [{self.duration}] {self.requested_by.mention}"
         self._source        = None
+        if source:
+            self._source = source
 
 
     @property
@@ -245,7 +247,7 @@ class Track:
 
     def seek(self, position: int) -> TrackSource:
         """Seek to a position in the Track (ms)"""
-        Track.logger.info(f"[GUILD {self.guild.id} | {self.guild.name}] Seeking to position: {position}")
+        # Track.logger.info(f"[GUILD {self.guild.id} | {self.guild.name}] Seeking to position: {position}")
         self.generate_source(position)
         self.ms = position
         return self.source
@@ -682,6 +684,12 @@ class TrackPlaylist:
             hour = str(hour) if hour > 10 else "0"+str(hour)
             line = f"{hour}:" + line
         return line      
+  
+    async def simulator_radio_add(self,ctx):
+        data = {"title" : "Simulator radio", "duration" : 3600000, "source" : {"url" : "https://simulatorradio.stream/stream", "ms" : 0}}
+        track = Track(url = "https://simulatorradio.stream/stream", requested_by=ctx.author, data=data)
+        self.queue.append(track)
+        self.timed_out = False
   
     async def get_queue_list(self):
         if self.queue_back_count > 0:                
