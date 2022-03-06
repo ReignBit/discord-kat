@@ -500,10 +500,17 @@ class Newvoice(KatCog):
         """Clears the current queue."""
         id = ctx.guild.id
         playlist = self.get_playlist(ctx)
+        # if not self.playlists:
+        #     self.playlists = self.get_playlist(ctx)
         await self.playlists[id].simulator_radio_add(ctx)
         embed = discord.Embed(title=f"Adding Simulator Radio to the queue!", color=16777215)
         await ctx.send(embed = embed)  
-        await self.playlists[id].play()
+        if not ctx.guild.voice_client:
+            await ctx.author.voice.channel.connect()
+        if not ctx.guild.voice_client.is_playing():                
+            await self.playlists[id].play()
+            return
+
         
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):       

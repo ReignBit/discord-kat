@@ -490,7 +490,7 @@ class TrackPlaylist:
             # await self.timer.start(self, 0.5*60*60)
             await self.timer.start(self)
             return
-
+            
         # Has playlist, with tracks, not stopped, in voice
         await self.timer.interrupt()
         self.timed_out = False
@@ -500,7 +500,8 @@ class TrackPlaylist:
     
         try:
             self.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
-        except:
+        except Exception as erroring:
+            TrackPlaylist.logger.warn(f"[GUILD {self.guild.id} | {self.guild.name}] {erroring}")
             track_error = True
             while(track_error):
                 embed = discord.Embed(title=f"Error playing: {track.title}",url = f"{track.url}", description=f"Requested by: {await self.string_fix(track.requested_by.display_name)}\nSkipping to next track!", color=16777215)
