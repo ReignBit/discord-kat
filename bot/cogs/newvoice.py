@@ -342,7 +342,7 @@ class Newvoice(KatCog):
         for track in queue:
             title = str(track.title).replace('"',"").replace("'","").replace("$","").replace('\\','')
             # TrackPlaylist.logger.debug(f"{counter}. [{title}]({track.url}) | duration: [{convert_sec_to_str(track.duration)}]")
-            line += f"{counter}. [{title}]({track.url}) | duration: [{convert_sec_to_str(track.duration)}]"                
+            line += f"{counter}. [{await self.playlists[id].string_fix(str(title))}]({track.url}) | duration: [{convert_sec_to_str(track.duration)}]"                
             if counter == 5:
                 break 
             else:
@@ -385,7 +385,7 @@ class Newvoice(KatCog):
                 return
         except Exception as err:
             TrackPlaylist.logger.warn("Queue command error")
-            TrackPlaylist.logger.warn(err)
+            TrackPlaylist.logger.debug(err)
             embed = discord.Embed(title=f"Queue", description=f"Error getting queue. Maybe have someone else try to request it.", color=16777215)
             await ctx.send(embed=embed)
             return
