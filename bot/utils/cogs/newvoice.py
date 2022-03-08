@@ -676,13 +676,13 @@ class TrackPlaylist:
         hour += int(line[0:line.find(':')])
         line = line[line.find(':')+1:]
         minute = int(line[0:line.find(':')])
-        minute = str(minute) if minute > 10 else "0"+str(minute)
+        minute = str(minute) if minute > 9 else "0"+str(minute)
         line = line[line.find(':')+1:]
         second = int(line)
-        second = str(second) if second > 10 else "0"+str(second)
+        second = str(second) if second > 9 else "0"+str(second)
         line = f"{minute}:{second}"
         if hour != 0:
-            hour = str(hour) if hour > 10 else "0"+str(hour)
+            hour = str(hour) if hour > 9 else "0"+str(hour)
             line = f"{hour}:" + line
         return line      
   
