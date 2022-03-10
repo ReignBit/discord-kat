@@ -55,13 +55,13 @@ def convert_sec_to_str(seconds):
     hour += int(line[0:line.find(':')])
     line = line[line.find(':')+1:]
     minute = int(line[0:line.find(':')])
-    minute = str(minute) if minute > 10 else "0"+str(minute)
+    minute = str(minute) if minute > 9 else "0"+str(minute)
     line = line[line.find(':')+1:]
     second = int(line)
-    second = str(second) if second > 10 else "0"+str(second)
+    second = str(second) if second > 9 else "0"+str(second)
     line = f"{minute}:{second}"
     if hour != 0:
-        hour = str(hour) if hour > 10 else "0"+str(hour)
+        hour = str(hour) if hour > 9 else "0"+str(hour)
         line = f"{hour}:" + line
     return line
 
@@ -89,6 +89,7 @@ class Newvoice(KatCog):
             id = ctx.guild.id
             # if not self.playlists[id]:
             #     return
+            playlist = self.get_playlist(ctx)
             if url == "":#play after error
                 if ctx.guild.voice_client and self.playlists[id].current_track:
                     ctx.guild.voice_client.resume()
@@ -96,13 +97,19 @@ class Newvoice(KatCog):
                     self.playlists[id].timed_out = False
                     self.playlists[id].is_stopped = False
                     TrackPlaylist.logger.info(f"[GUILD {self.guild.name} | {self.guild.id}] Resumed playing")
-            playlist = self.get_playlist(ctx)
             tracks = []
             self.playlists[ctx.guild.id].last_queue_msg = None
             try:
                 tracks = await playlist.insert(url, ctx.author)
                 self.playlists[ctx.guild.id].timed_out = False
             except:
+                try:
+                        tracks = await playlist.insert(url, ctx.author)
+                        self.playlists[ctx.guild.id].timed_out = False
+                except:
+                    embed = discord.Embed(title=f"That link doesn't seem to work:(", color=16777215)
+                    await ctx.send(embed = embed)
+                    return
                 embed = discord.Embed(title=f"That link doesn't seem to work:(", color=16777215)
                 await ctx.send(embed = embed)
                 return
@@ -335,7 +342,7 @@ class Newvoice(KatCog):
         for track in queue:
             title = str(track.title).replace('"',"").replace("'","").replace("$","").replace('\\','')
             # TrackPlaylist.logger.debug(f"{counter}. [{title}]({track.url}) | duration: [{convert_sec_to_str(track.duration)}]")
-            line += f"{counter}. [{title}]({track.url}) | duration: [{convert_sec_to_str(track.duration)}]"                
+            line += f"{counter}. [{await self.playlists[id].string_fix(str(title))}]({track.url}) | duration: [{convert_sec_to_str(track.duration)}]"                
             if counter == 5:
                 break 
             else:
@@ -350,7 +357,7 @@ class Newvoice(KatCog):
                     currently_playing_title = self.playlists[id].current_track.title,
                     youtube_url = self.playlists[id].current_track.url,
                     timestamp = convert_sec_to_str(self.playlists[id].current_track.duration),
-                    author = await self.playlists[id].string_fix(ctx.author.display_name),
+                    author = await self.playlists[id].string_fix(self.playlists[id].current_track.requested_by.display_name),
                     queue_count = len(self.playlists[id].queue),
                     total_duration = convert_sec_to_str(await self.playlists[id].total_duration()),
                     song_list = str(line)
@@ -378,7 +385,7 @@ class Newvoice(KatCog):
                 return
         except Exception as err:
             TrackPlaylist.logger.warn("Queue command error")
-            TrackPlaylist.logger.warn(err)
+            TrackPlaylist.logger.debug(err)
             embed = discord.Embed(title=f"Queue", description=f"Error getting queue. Maybe have someone else try to request it.", color=16777215)
             await ctx.send(embed=embed)
             return
@@ -487,7 +494,23 @@ class Newvoice(KatCog):
                 if not ctx.guild.voice_client.is_playing():                
                     await self.playlists[ctx.guild.id].play()
                     return
-        
+    
+    @commands.command(aliases=['simulator','sr'])
+    async def simulator_radio_add(self, ctx):
+        """Clears the current queue."""
+        id = ctx.guild.id
+        playlist = self.get_playlist(ctx)
+        # if not self.playlists:
+        #     self.playlists = self.get_playlist(ctx)
+        await self.playlists[id].simulator_radio_add(ctx)
+        embed = discord.Embed(title=f"Adding Simulator Radio to the queue!", color=16777215)
+        await ctx.send(embed = embed)  
+        if not ctx.guild.voice_client:
+            await ctx.author.voice.channel.connect()
+        if not ctx.guild.voice_client.is_playing():                
+            await self.playlists[id].play()
+            return
+
         
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):       

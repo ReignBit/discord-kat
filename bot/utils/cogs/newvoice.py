@@ -145,7 +145,7 @@ class TrackSource(discord.PCMVolumeTransformer):
 
 class Track:
     logger = None
-    def __init__(self, url, requested_by: discord.Member, data: dict, loop=None):
+    def __init__(self, url, requested_by: discord.Member, data: dict, loop=None, source=None):
         """Information about a song/video in a playlist.
 
         source: TrackSource - Contains information about audio stream and duration
@@ -170,6 +170,8 @@ class Track:
 
         self.readable       = f"{self.title} [{self.duration}] {self.requested_by.mention}"
         self._source        = None
+        if source:
+            self._source = source
 
 
     @property
@@ -245,7 +247,7 @@ class Track:
 
     def seek(self, position: int) -> TrackSource:
         """Seek to a position in the Track (ms)"""
-        Track.logger.info(f"[GUILD {self.guild.id} | {self.guild.name}] Seeking to position: {position}")
+        # Track.logger.info(f"[GUILD {self.guild.id} | {self.guild.name}] Seeking to position: {position}")
         self.generate_source(position)
         self.ms = position
         return self.source
@@ -488,7 +490,7 @@ class TrackPlaylist:
             # await self.timer.start(self, 0.5*60*60)
             await self.timer.start(self)
             return
-
+            
         # Has playlist, with tracks, not stopped, in voice
         await self.timer.interrupt()
         self.timed_out = False
@@ -498,7 +500,8 @@ class TrackPlaylist:
     
         try:
             self.guild.voice_client.play(track.generate_source(), after=lambda e: self.loop.create_task(self._after_playback(e)))
-        except:
+        except Exception as erroring:
+            TrackPlaylist.logger.warn(f"[GUILD {self.guild.id} | {self.guild.name}] {erroring}")
             track_error = True
             while(track_error):
                 embed = discord.Embed(title=f"Error playing: {track.title}",url = f"{track.url}", description=f"Requested by: {await self.string_fix(track.requested_by.display_name)}\nSkipping to next track!", color=16777215)
@@ -673,15 +676,21 @@ class TrackPlaylist:
         hour += int(line[0:line.find(':')])
         line = line[line.find(':')+1:]
         minute = int(line[0:line.find(':')])
-        minute = str(minute) if minute > 10 else "0"+str(minute)
+        minute = str(minute) if minute > 9 else "0"+str(minute)
         line = line[line.find(':')+1:]
         second = int(line)
-        second = str(second) if second > 10 else "0"+str(second)
+        second = str(second) if second > 9 else "0"+str(second)
         line = f"{minute}:{second}"
         if hour != 0:
-            hour = str(hour) if hour > 10 else "0"+str(hour)
+            hour = str(hour) if hour > 9 else "0"+str(hour)
             line = f"{hour}:" + line
         return line      
+  
+    async def simulator_radio_add(self,ctx):
+        data = {"title" : "Simulator radio", "duration" : 3600000, "source" : {"url" : "https://simulatorradio.stream/stream", "ms" : 0}}
+        track = Track(url = "https://simulatorradio.stream/stream", requested_by=ctx.author, data=data)
+        self.queue.append(track)
+        self.timed_out = False
   
     async def get_queue_list(self):
         if self.queue_back_count > 0:                
