@@ -1,5 +1,9 @@
 # Kat Discord Bot (Version 3.3.5)
 
+## Development Stopped
+> Kat is being rewritten in Java. All development on the python version has stopped.
+> For more information see [the new java repo here](https://github.com/reignbit/java-discord-kat)
+
 
 ![master](https://github.com/ReignBit/discord-kat/workflows/test-units/badge.svg?branch=master)
 
